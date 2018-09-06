@@ -38,13 +38,11 @@ under the License.
         <div id="main"></div>
         <script>
             require([
-                'echarts'
+                'echarts',
                 // 'echarts/chart/tree',
                 // 'echarts/component/tooltip'
                 ], function (echarts) {
-                    var chart = echarts.init(document.getElementById('main'), null, {
-
-                    });
+                    var chart = echarts.init(document.getElementById('main'));
 
                     window.onresize = function () {
                         chart.resize();
@@ -75,8 +73,9 @@ under the License.
                                     left: '7%',
                                     bottom: '1%',
                                     right: '20%',
-
-                                    symbolSize: 7,
+                                    roam:true,
+                                    symbol:'emptyRoundRect',
+                                    symbolSize: 10,
 
                                     // initialTreeDepth: -1,
 
@@ -93,15 +92,29 @@ under the License.
                                                 align: 'left'
                                         }
                                     },
-
+                                    emphasis:{
+                                        lineStyle:{
+                                            width:10
+                                        },
+                                        label: {
+                                            color:'#000'
+                                        },
+                                        itemStyle:{
+                                            borderWidth:3.5,
+                                            color: '#999',
+                                        }
+                                    },
+                                    hoverAnimation:true,
                                     // expandAndCollapse: false,
                                     animationDuration: 550,
                                     animationDurationUpdate: 750
                                 }
                             ]
                         });
-
-                        setTimeout(function() {
+                        chart.on('click',(e)=>{
+                            console.log(e)
+                        })
+                        /*setTimeout(function() {
                             var newData = echarts.util.clone(data);
                             newData.children.splice(0, 1);
                             chart.setOption({
@@ -111,7 +124,7 @@ under the License.
                                     data: [newData]
                                 }]
                             }, false);
-                        }, 1000);
+                        }, 1000);*/
 
                     });
                 });

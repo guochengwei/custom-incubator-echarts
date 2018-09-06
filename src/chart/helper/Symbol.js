@@ -254,7 +254,6 @@ symbolProto._updateCommon = function (data, idx, symbolSize, seriesScope) {
         // Because symbol provide setColor individually to set fill and stroke
         itemStyle = itemModel.getModel(normalStyleAccessPath).getItemStyle(['color']);
         hoverItemStyle = itemModel.getModel(emphasisStyleAccessPath).getItemStyle();
-
         symbolRotate = itemModel.getShallow('symbolRotate');
         symbolOffset = itemModel.getShallow('symbolOffset');
 
@@ -321,16 +320,18 @@ symbolProto._updateCommon = function (data, idx, symbolSize, seriesScope) {
         return useNameLabel ? data.getName(idx) : getDefaultLabel(data, idx);
     }
 
-    symbolPath.off('mouseover')
-        .off('mouseout')
-        .off('emphasis')
-        .off('normal');
+    
 
     symbolPath.hoverStyle = hoverItemStyle;
 
     // FIXME
     // Do not use symbol.trigger('emphasis'), but use symbol.highlight() instead.
     graphic.setHoverStyle(symbolPath);
+    
+    symbolPath.off('mouseover')
+    .off('mouseout')
+    .off('emphasis')
+    .off('normal');
 
     symbolPath.__symbolOriginalScale = getScale(symbolSize);
 
