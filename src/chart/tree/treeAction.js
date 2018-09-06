@@ -22,9 +22,8 @@
  * @author Deqing Li(annong035@gmail.com)
  */
 
-import * as echarts from '../../echarts'
-import {updateCenterAndZoom} from '../../action/roamHelper'
-import {eachAfter, eachBefore} from './traversalHelper'
+import * as echarts from '../../echarts';
+import {updateCenterAndZoom} from '../../action/roamHelper';
 
 echarts.registerAction({
     type: 'treeExpandAndCollapse',

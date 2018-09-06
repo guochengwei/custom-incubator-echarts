@@ -202,7 +202,7 @@ symbolProto.updateData = function (data, idx, seriesScope) {
         var fadeIn = seriesScope && seriesScope.fadeIn;
 
         var target = {scale: symbolPath.scale.slice()};
-        fadeIn && (target.style = {opacity: 1});
+        fadeIn && (target.style = {opacity: symbolPath.style.opacity});
 
         symbolPath.scale = [0, 0];
         fadeIn && (symbolPath.style.opacity = 0);
