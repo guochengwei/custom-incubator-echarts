@@ -165,7 +165,7 @@ pip-log.txt
 .idea
 .ideaout
 rat.iml
-
+custom
 node_modules
 
 map/tool

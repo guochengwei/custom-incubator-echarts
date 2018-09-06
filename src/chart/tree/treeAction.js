@@ -22,8 +22,9 @@
  * @author Deqing Li(annong035@gmail.com)
  */
 
-import * as echarts from '../../echarts';
-import {updateCenterAndZoom} from '../../action/roamHelper';
+import * as echarts from '../../echarts'
+import {updateCenterAndZoom} from '../../action/roamHelper'
+import {eachAfter, eachBefore} from './traversalHelper'
 
 echarts.registerAction({
     type: 'treeExpandAndCollapse',
@@ -31,13 +32,29 @@ echarts.registerAction({
     update: 'update'
 }, function (payload, ecModel) {
     ecModel.eachComponent({mainType: 'series', subType: 'tree', query: payload}, function (seriesModel) {
-        var dataIndex = payload.dataIndex;
-        var tree = seriesModel.getData().tree;
-        var node = tree.getNodeByDataIndex(dataIndex);
-        node.isExpand = !node.isExpand;
-
-    });
-});
+        var dataIndex = payload.dataIndex
+        var data = seriesModel.getData()
+        var tree = data.tree
+        var node = tree.getNodeByDataIndex(dataIndex)
+        if (node.isExpand && node.isActive) {
+            node.isExpand = false
+        } else {
+            node.isExpand = true
+        }
+        tree.root.eachNode(function (item) {
+            item.isActive = false
+            var el = data.getItemGraphicEl(item.dataIndex)
+            el && el.downplay()
+            el && el.__edge && el.__edge.trigger('normal')
+        })
+        node.getAncestors(true).forEach(function (item) {
+            item.isActive = true
+            var el = data.getItemGraphicEl(item.dataIndex)
+            el && el.highlight()
+            el && el.__edge && el.__edge.trigger('emphasis')
+        })
+    })
+})
 
 echarts.registerAction({
     type: 'treeRoam',
@@ -49,13 +66,13 @@ echarts.registerAction({
     update: 'none'
 }, function (payload, ecModel) {
     ecModel.eachComponent({mainType: 'series', subType: 'tree', query: payload}, function (seriesModel) {
-        var coordSys = seriesModel.coordinateSystem;
-        var res = updateCenterAndZoom(coordSys, payload);
-
+        var coordSys = seriesModel.coordinateSystem
+        var res = updateCenterAndZoom(coordSys, payload)
+        
         seriesModel.setCenter
-            && seriesModel.setCenter(res.center);
-
+        && seriesModel.setCenter(res.center)
+        
         seriesModel.setZoom
-            && seriesModel.setZoom(res.zoom);
-    });
-});
+        && seriesModel.setZoom(res.zoom)
+    })
+})
