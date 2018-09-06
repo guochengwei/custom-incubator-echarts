@@ -28,7 +28,7 @@ import Text from 'zrender/src/graphic/Text';
 function TooltipRichContent(api) {
     // this.el = new Group();
 
-    // var zr = this._zr = api.getZr();
+    var zr = this._zr = api.getZr();
     // zr.add(this.el);
 
     this._show = false;
