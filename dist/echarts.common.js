@@ -35147,14 +35147,14 @@ symbolProto._updateCommon = function (data, idx, symbolSize, seriesScope) {
         return useNameLabel ? data.getName(idx) : getDefaultLabel(data, idx);
     }
 
-    
+
 
     symbolPath.hoverStyle = hoverItemStyle;
 
     // FIXME
     // Do not use symbol.trigger('emphasis'), but use symbol.highlight() instead.
     setHoverStyle(symbolPath);
-    
+
     symbolPath.off('mouseover')
     .off('mouseout')
     .off('emphasis')

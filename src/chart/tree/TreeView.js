@@ -22,21 +22,21 @@
  * @author Deqing Li(annong035@gmail.com)
  */
 
-import * as zrUtil from 'zrender/src/core/util'
-import * as graphic from '../../util/graphic'
-import SymbolClz from '../helper/Symbol'
-import {radialCoordinate} from './layoutHelper'
-import * as echarts from '../../echarts'
-import * as bbox from 'zrender/src/core/bbox'
-import View from '../../coord/View'
-import * as roamHelper from '../../component/helper/roamHelper'
-import RoamController from '../../component/helper/RoamController'
-import {onIrrelevantElement} from '../../component/helper/cursorHelper'
+import * as zrUtil from 'zrender/src/core/util';
+import * as graphic from '../../util/graphic';
+import SymbolClz from '../helper/Symbol';
+import {radialCoordinate} from './layoutHelper';
+import * as echarts from '../../echarts';
+import * as bbox from 'zrender/src/core/bbox';
+import View from '../../coord/View';
+import * as roamHelper from '../../component/helper/roamHelper';
+import RoamController from '../../component/helper/RoamController';
+import {onIrrelevantElement} from '../../component/helper/cursorHelper';
 
 export default echarts.extendChartView({
-    
+
     type: 'tree',
-    
+
     /**
      * Init the chart
      * @override
@@ -44,51 +44,51 @@ export default echarts.extendChartView({
      * @param  {module:echarts/ExtensionAPI} api
      */
     init: function (ecModel, api) {
-        
+
         /**
          * @private
          * @type {module:echarts/data/Tree}
          */
-        this._oldTree
-        
+        this._oldTree;
+
         /**
          * @private
          * @type {module:zrender/container/Group}
          */
-        this._mainGroup = new graphic.Group()
-        
+        this._mainGroup = new graphic.Group();
+
         /**
          * @private
          * @type {module:echarts/componet/helper/RoamController}
          */
-        this._controller = new RoamController(api.getZr())
-        
-        this._controllerHost = {target: this.group}
-        
-        this.group.add(this._mainGroup)
+        this._controller = new RoamController(api.getZr());
+
+        this._controllerHost = {target: this.group};
+
+        this.group.add(this._mainGroup);
     },
-    
+
     render: function (seriesModel, ecModel, api, payload) {
-        var data = seriesModel.getData()
-        
-        var layoutInfo = seriesModel.layoutInfo
-        
-        var group = this._mainGroup
-        
-        var layout = seriesModel.get('layout')
-        
+        var data = seriesModel.getData();
+
+        var layoutInfo = seriesModel.layoutInfo;
+
+        var group = this._mainGroup;
+
+        var layout = seriesModel.get('layout');
+
         if (layout === 'radial') {
-            group.attr('position', [layoutInfo.x + layoutInfo.width / 2, layoutInfo.y + layoutInfo.height / 2])
+            group.attr('position', [layoutInfo.x + layoutInfo.width / 2, layoutInfo.y + layoutInfo.height / 2]);
         }
         else {
-            group.attr('position', [layoutInfo.x, layoutInfo.y])
+            group.attr('position', [layoutInfo.x, layoutInfo.y]);
         }
-        
-        this._updateViewCoordSys(seriesModel)
-        this._updateController(seriesModel, ecModel, api)
-        
-        var oldData = this._data
-        
+
+        this._updateViewCoordSys(seriesModel);
+        this._updateController(seriesModel, ecModel, api);
+
+        var oldData = this._data;
+
         var seriesScope = {
             expandAndCollapse: seriesModel.get('expandAndCollapse'),
             layout: layout,
@@ -99,212 +99,215 @@ export default echarts.extendChartView({
             hoverAnimation: seriesModel.get('hoverAnimation'),
             useNameLabel: true,
             fadeIn: false
-        }
+        };
         data.diff(oldData)
         .add(function (newIdx) {
             if (symbolNeedsDraw(data, newIdx)) {
                 // Create node and edge
-                updateNode(data, newIdx, null, group, seriesModel, seriesScope)
+                updateNode(data, newIdx, null, group, seriesModel, seriesScope);
             }
         })
         .update(function (newIdx, oldIdx) {
-            var symbolEl = oldData.getItemGraphicEl(oldIdx)
+            var symbolEl = oldData.getItemGraphicEl(oldIdx);
             if (!symbolNeedsDraw(data, newIdx)) {
-                symbolEl && removeNode(oldData, oldIdx, symbolEl, group, seriesModel, seriesScope)
-                return
+                symbolEl && removeNode(oldData, oldIdx, symbolEl, group, seriesModel, seriesScope);
+                return;
             }
-            
+
             // Update node and edge
-            updateNode(data, newIdx, symbolEl, group, seriesModel, seriesScope)
+            updateNode(data, newIdx, symbolEl, group, seriesModel, seriesScope);
         })
         .remove(function (oldIdx) {
-            var symbolEl = oldData.getItemGraphicEl(oldIdx)
+            var symbolEl = oldData.getItemGraphicEl(oldIdx);
             // When remove a collapsed node of subtree, since the collapsed
             // node haven't been initialized with a symbol element,
             // you can't found it's symbol element through index.
             // so if we want to remove the symbol element we should insure
             // that the symbol element is not null.
             if (symbolEl) {
-                removeNode(oldData, oldIdx, symbolEl, group, seriesModel, seriesScope)
+                removeNode(oldData, oldIdx, symbolEl, group, seriesModel, seriesScope);
             }
         })
-        .execute()
-        
-        this._nodeScaleRatio = seriesModel.get('nodeScaleRatio')
-        
-        this._updateNodeAndLinkScale(seriesModel)
-        
+        .execute();
+
+        this._nodeScaleRatio = seriesModel.get('nodeScaleRatio');
+
+        this._updateNodeAndLinkScale(seriesModel);
+
+
         if (seriesScope.expandAndCollapse === true) {
             data.eachItemGraphicEl(function (el, dataIndex) {
                 el.off('click').on('click', function () {
                     api.dispatchAction({
                         type: 'treeExpandAndCollapse',
                         seriesId: seriesModel.id,
-                        dataIndex: dataIndex
-                    })
-                })
-            })
+                        dataIndex: dataIndex,
+                    });
+                });
+            });
         }
-        this._data = data
+        this._data = data;
     },
-    
+
     _updateViewCoordSys: function (seriesModel) {
-        var data = seriesModel.getData()
-        var points = []
+        var data = seriesModel.getData();
+        var points = [];
         data.each(function (idx) {
-            var layout = data.getItemLayout(idx)
+            var layout = data.getItemLayout(idx);
             if (layout && !isNaN(layout.x) && !isNaN(layout.y)) {
-                points.push([+layout.x, +layout.y])
+                points.push([+layout.x, +layout.y]);
             }
-        })
-        var min = []
-        var max = []
-        bbox.fromPoints(points, min, max)
+        });
+        var min = [];
+        var max = [];
+        bbox.fromPoints(points, min, max);
         // If width or height is 0
         if (max[0] - min[0] === 0) {
-            max[0] += 1
-            min[0] -= 1
+            max[0] += 1;
+            min[0] -= 1;
         }
         if (max[1] - min[1] === 0) {
-            max[1] += 1
-            min[1] -= 1
+            max[1] += 1;
+            min[1] -= 1;
         }
-        
-        var viewCoordSys = seriesModel.coordinateSystem = new View()
-        viewCoordSys.zoomLimit = seriesModel.get('scaleLimit')
-        
-        viewCoordSys.setBoundingRect(min[0], min[1], max[0] - min[0], max[1] - min[1])
-        
-        viewCoordSys.setCenter(seriesModel.get('center'))
-        viewCoordSys.setZoom(seriesModel.get('zoom'))
-        
+
+        var viewCoordSys = seriesModel.coordinateSystem = new View();
+        viewCoordSys.zoomLimit = seriesModel.get('scaleLimit');
+
+        viewCoordSys.setBoundingRect(min[0], min[1], max[0] - min[0], max[1] - min[1]);
+
+        viewCoordSys.setCenter(seriesModel.get('center'));
+        viewCoordSys.setZoom(seriesModel.get('zoom'));
+
         // Here we use viewCoordSys just for computing the 'position' and 'scale' of the group
         this.group.attr({
             position: viewCoordSys.position,
             scale: viewCoordSys.scale
-        })
-        
-        this._viewCoordSys = viewCoordSys
+        });
+
+        this._viewCoordSys = viewCoordSys;
     },
-    
+
     _updateController: function (seriesModel, ecModel, api) {
-        var controller = this._controller
-        var controllerHost = this._controllerHost
-        var group = this.group
+        var controller = this._controller;
+        var controllerHost = this._controllerHost;
+        var group = this.group;
         controller.setPointerChecker(function (e, x, y) {
-            var rect = group.getBoundingRect()
-            rect.applyTransform(group.transform)
+            var rect = group.getBoundingRect();
+            rect.applyTransform(group.transform);
             return rect.contain(x, y)
-                   && !onIrrelevantElement(e, api, seriesModel)
-        })
-        
-        controller.enable(seriesModel.get('roam'))
-        controllerHost.zoomLimit = seriesModel.get('scaleLimit')
-        controllerHost.zoom = seriesModel.coordinateSystem.getZoom()
-        
+                   && !onIrrelevantElement(e, api, seriesModel);
+        });
+
+        controller.enable(seriesModel.get('roam'));
+        controllerHost.zoomLimit = seriesModel.get('scaleLimit');
+        controllerHost.zoom = seriesModel.coordinateSystem.getZoom();
+
         controller
         .off('pan')
         .off('zoom')
         .on('pan', function (e) {
-            roamHelper.updateViewOnPan(controllerHost, e.dx, e.dy)
+            roamHelper.updateViewOnPan(controllerHost, e.dx, e.dy);
             api.dispatchAction({
                 seriesId: seriesModel.id,
                 type: 'treeRoam',
                 dx: e.dx,
                 dy: e.dy
-            })
+            });
         }, this)
         .on('zoom', function (e) {
-            roamHelper.updateViewOnZoom(controllerHost, e.scale, e.originX, e.originY)
+            roamHelper.updateViewOnZoom(controllerHost, e.scale, e.originX, e.originY);
             api.dispatchAction({
                 seriesId: seriesModel.id,
                 type: 'treeRoam',
                 zoom: e.scale,
                 originX: e.originX,
                 originY: e.originY
-            })
-            this._updateNodeAndLinkScale(seriesModel)
-        }, this)
+            });
+            this._updateNodeAndLinkScale(seriesModel);
+        }, this);
     },
-    
-    _updateNodeAndLinkScale: function (seriesModel) {
-        var data = seriesModel.getData()
-        
-        var nodeScale = this._getNodeGlobalScale(seriesModel)
-        var invScale = [nodeScale, nodeScale]
-        
-        data.eachItemGraphicEl(function (el, idx) {
-            el.attr('scale', invScale)
-        })
-    },
-    
-    _getNodeGlobalScale: function (seriesModel) {
-        var coordSys = seriesModel.coordinateSystem
-        if (coordSys.type !== 'view') {
-            return 1
-        }
-        
-        var nodeScaleRatio = this._nodeScaleRatio
-        
-        var groupScale = coordSys.scale
-        var groupZoom = (groupScale && groupScale[0]) || 1
-        // Scale node when zoom changes
-        var roamZoom = coordSys.getZoom()
-        var nodeScale = (roamZoom - 1) * nodeScaleRatio + 1
-        
-        return nodeScale / groupZoom
-    },
-    
-    dispose: function () {
-        this._controller && this._controller.dispose()
-        this._controllerHost = {}
-    },
-    
-    remove: function () {
-        this._mainGroup.removeAll()
-        this._data = null
-    }
-    
-})
 
-function symbolNeedsDraw (data, dataIndex) {
-    var layout = data.getItemLayout(dataIndex)
-    
+    _updateNodeAndLinkScale: function (seriesModel) {
+        var data = seriesModel.getData();
+
+        var nodeScale = this._getNodeGlobalScale(seriesModel);
+        var invScale = [nodeScale, nodeScale];
+
+        data.eachItemGraphicEl(function (el, idx) {
+            el.attr('scale', invScale);
+        });
+    },
+
+    _getNodeGlobalScale: function (seriesModel) {
+        var coordSys = seriesModel.coordinateSystem;
+        if (coordSys.type !== 'view') {
+            return 1;
+        }
+
+        var nodeScaleRatio = this._nodeScaleRatio;
+
+        var groupScale = coordSys.scale;
+        var groupZoom = (groupScale && groupScale[0]) || 1;
+        // Scale node when zoom changes
+        var roamZoom = coordSys.getZoom();
+        var nodeScale = (roamZoom - 1) * nodeScaleRatio + 1;
+
+        return nodeScale / groupZoom;
+    },
+
+    dispose: function () {
+        this._controller && this._controller.dispose();
+        this._controllerHost = {};
+    },
+
+    remove: function () {
+        this._mainGroup.removeAll();
+        this._data = null;
+    }
+
+});
+
+function symbolNeedsDraw(data, dataIndex) {
+    var layout = data.getItemLayout(dataIndex);
+
     return layout
            && !isNaN(layout.x) && !isNaN(layout.y)
-           && data.getItemVisual(dataIndex, 'symbol') !== 'none'
+           && data.getItemVisual(dataIndex, 'symbol') !== 'none';
 }
 
-function getTreeNodeStyle (node, itemModel, seriesScope) {
-    seriesScope.itemModel = itemModel
-    seriesScope.itemStyle = itemModel.getModel('itemStyle').getItemStyle()
-    seriesScope.hoverItemStyle = itemModel.getModel('emphasis.itemStyle').getItemStyle()
-    seriesScope.labelModel = itemModel.getModel('label')
-    seriesScope.hoverLabelModel = itemModel.getModel('emphasis.label')
-    seriesScope.lineStyle = itemModel.getModel('lineStyle').getLineStyle()
-    seriesScope.hoverLineModel = itemModel.getModel('emphasis.lineStyle').getLineStyle()
-    seriesScope.hoverAnimation = true
-    if(node.isActive){
-        seriesScope.symbolInnerColor = seriesScope.hoverItemStyle.fill
-    } else if (node.isExpand === false && node.children.length !== 0) {
-        seriesScope.symbolInnerColor = seriesScope.itemStyle.fill
-    }else {
-        seriesScope.symbolInnerColor = '#fff'
+function getTreeNodeStyle(node, itemModel, seriesScope) {
+    seriesScope.itemModel = itemModel;
+    seriesScope.itemStyle = itemModel.getModel('itemStyle').getItemStyle();
+    seriesScope.hoverItemStyle = itemModel.getModel('emphasis.itemStyle').getItemStyle();
+    seriesScope.labelModel = itemModel.getModel('label');
+    seriesScope.hoverLabelModel = itemModel.getModel('emphasis.label');
+    seriesScope.lineStyle = itemModel.getModel('lineStyle').getLineStyle();
+    seriesScope.hoverLineModel = itemModel.getModel('emphasis.lineStyle').getLineStyle();
+    seriesScope.hoverAnimation = true;
+    if (node.isActive) {
+        seriesScope.symbolInnerColor = seriesScope.hoverItemStyle.fill;
     }
-    return seriesScope
+    else if (node.isExpand === false && node.children.length !== 0) {
+        seriesScope.symbolInnerColor = seriesScope.itemStyle.fill;
+    }
+    else {
+        seriesScope.symbolInnerColor = '#fff';
+    }
+    return seriesScope;
 }
 
-function updateNode (data, dataIndex, symbolEl, group, seriesModel, seriesScope) {
-    var isInit = !symbolEl
-    var tree = data.tree
-    var node = tree.getNodeByDataIndex(dataIndex)
-    var itemModel = node.getModel()
-    var symbolSize = data.hostModel.option.symbolSize
-    var seriesScope = getTreeNodeStyle(node, itemModel, seriesScope)
-    var virtualRoot = tree.root
-    var source = node.parentNode === virtualRoot ? node : node.parentNode || node
-    var sourceSymbolEl = data.getItemGraphicEl(source.dataIndex)
-    var sourceLayout = source.getLayout()
+function updateNode(data, dataIndex, symbolEl, group, seriesModel, seriesScope) {
+    var isInit = !symbolEl;
+    var tree = data.tree;
+    var node = tree.getNodeByDataIndex(dataIndex);
+    var itemModel = node.getModel();
+    var symbolSize = data.hostModel.option.symbolSize;
+    var seriesScope = getTreeNodeStyle(node, itemModel, seriesScope);
+    var virtualRoot = tree.root;
+    var source = node.parentNode === virtualRoot ? node : node.parentNode || node;
+    var sourceSymbolEl = data.getItemGraphicEl(source.dataIndex);
+    var sourceLayout = source.getLayout();
     var sourceOldLayout = sourceSymbolEl
                           ? {
             x: sourceSymbolEl.position[0],
@@ -312,151 +315,152 @@ function updateNode (data, dataIndex, symbolEl, group, seriesModel, seriesScope)
             rawX: sourceSymbolEl.__radialOldRawX,
             rawY: sourceSymbolEl.__radialOldRawY
         }
-                          : sourceLayout
-    var targetLayout = node.getLayout()
-    if(node.isActive){
-        data.setItemVisual(dataIndex,'symbolSize',Math.max(symbolSize * 1.2, symbolSize + 5))
-    }else{
-        data.setItemVisual(dataIndex,'symbolSize',symbolSize)
-    }
-    if (isInit) {
-        symbolEl = new SymbolClz(data, dataIndex, seriesScope)
-        symbolEl.attr('position', [sourceOldLayout.x, sourceOldLayout.y])
+                          : sourceLayout;
+    var targetLayout = node.getLayout();
+    if (node.isActive) {
+        data.setItemVisual(dataIndex, 'symbolSize', Math.max(symbolSize * 1.2, symbolSize + 5));
     }
     else {
-        symbolEl.updateData(data, dataIndex, seriesScope)
+        data.setItemVisual(dataIndex, 'symbolSize', symbolSize);
     }
-    
-    symbolEl.__radialOldRawX = symbolEl.__radialRawX
-    symbolEl.__radialOldRawY = symbolEl.__radialRawY
-    symbolEl.__radialRawX = targetLayout.rawX
-    symbolEl.__radialRawY = targetLayout.rawY
-    
-    group.add(symbolEl)
-    data.setItemGraphicEl(dataIndex, symbolEl)
+    if (isInit) {
+        symbolEl = new SymbolClz(data, dataIndex, seriesScope);
+        symbolEl.attr('position', [sourceOldLayout.x, sourceOldLayout.y]);
+    }
+    else {
+        symbolEl.updateData(data, dataIndex, seriesScope);
+    }
+
+    symbolEl.__radialOldRawX = symbolEl.__radialRawX;
+    symbolEl.__radialOldRawY = symbolEl.__radialRawY;
+    symbolEl.__radialRawX = targetLayout.rawX;
+    symbolEl.__radialRawY = targetLayout.rawY;
+
+    group.add(symbolEl);
+    data.setItemGraphicEl(dataIndex, symbolEl);
     graphic.updateProps(symbolEl, {
-        position: [targetLayout.x, targetLayout.y],
-    }, seriesModel)
-    
-    var symbolPath = symbolEl.getSymbolPath()
-    
+        position: [targetLayout.x, targetLayout.y]
+    }, seriesModel);
+
+    var symbolPath = symbolEl.getSymbolPath();
+
     if (seriesScope.layout === 'radial') {
-        var realRoot = virtualRoot.children[0]
-        var rootLayout = realRoot.getLayout()
-        var length = realRoot.children.length
-        var rad
-        var isLeft
-        
+        var realRoot = virtualRoot.children[0];
+        var rootLayout = realRoot.getLayout();
+        var length = realRoot.children.length;
+        var rad;
+        var isLeft;
+
         if (targetLayout.x === rootLayout.x && node.isExpand === true) {
-            var center = {}
-            center.x = (realRoot.children[0].getLayout().x + realRoot.children[length - 1].getLayout().x) / 2
-            center.y = (realRoot.children[0].getLayout().y + realRoot.children[length - 1].getLayout().y) / 2
-            rad = Math.atan2(center.y - rootLayout.y, center.x - rootLayout.x)
+            var center = {};
+            center.x = (realRoot.children[0].getLayout().x + realRoot.children[length - 1].getLayout().x) / 2;
+            center.y = (realRoot.children[0].getLayout().y + realRoot.children[length - 1].getLayout().y) / 2;
+            rad = Math.atan2(center.y - rootLayout.y, center.x - rootLayout.x);
             if (rad < 0) {
-                rad = Math.PI * 2 + rad
+                rad = Math.PI * 2 + rad;
             }
-            isLeft = center.x < rootLayout.x
+            isLeft = center.x < rootLayout.x;
             if (isLeft) {
-                rad = rad - Math.PI
+                rad = rad - Math.PI;
             }
         }
         else {
-            rad = Math.atan2(targetLayout.y - rootLayout.y, targetLayout.x - rootLayout.x)
+            rad = Math.atan2(targetLayout.y - rootLayout.y, targetLayout.x - rootLayout.x);
             if (rad < 0) {
-                rad = Math.PI * 2 + rad
+                rad = Math.PI * 2 + rad;
             }
             if (node.children.length === 0 || (node.children.length !== 0 && node.isExpand === false)) {
-                isLeft = targetLayout.x < rootLayout.x
+                isLeft = targetLayout.x < rootLayout.x;
                 if (isLeft) {
-                    rad = rad - Math.PI
+                    rad = rad - Math.PI;
                 }
             }
             else {
-                isLeft = targetLayout.x > rootLayout.x
+                isLeft = targetLayout.x > rootLayout.x;
                 if (!isLeft) {
-                    rad = rad - Math.PI
+                    rad = rad - Math.PI;
                 }
             }
         }
-        
-        var textPosition = isLeft ? 'left' : 'right'
+
+        var textPosition = isLeft ? 'left' : 'right';
         symbolPath.setStyle({
             textPosition: textPosition,
             textRotation: -rad,
             textOrigin: 'center',
             verticalAlign: 'middle'
-        })
+        });
     }
-    
-    var ancestors = node.getAncestors(true)
+
+    var ancestors = node.getAncestors(true);
     var ancestorsEl = ancestors.map(function (item) {
         if (item !== virtualRoot && !item.isActive) {
-            return data.getItemGraphicEl(item.dataIndex)
+            return data.getItemGraphicEl(item.dataIndex);
         }
-    })
+    });
     if (node.parentNode && node.parentNode !== virtualRoot) {
-        
-        var edge = symbolEl.__edge
-        
+
+        var edge = symbolEl.__edge;
+
         if (!edge) {
             edge = symbolEl.__edge = new graphic.BezierCurve({
                 shape: getEdgeShape(seriesScope, sourceOldLayout, sourceOldLayout),
                 style: zrUtil.defaults({opacity: 0, strokeNoScale: true}, seriesScope.lineStyle)
-            })
+            });
         }
-        
+
         graphic.updateProps(edge, {
             shape: getEdgeShape(seriesScope, sourceLayout, targetLayout),
             style: {opacity: 1}
-        }, seriesModel)
-        graphic.setHoverStyle(edge, seriesScope.hoverLineModel)
-        
-        edge.off('mouseover').off('mouseout')
-        symbolEl.off('mouseover').off('mouseout')
-        group.add(edge)
+        }, seriesModel);
+        graphic.setHoverStyle(edge, seriesScope.hoverLineModel);
+
+        edge.off('mouseover').off('mouseout');
+        symbolEl.off('mouseover').off('mouseout');
+        group.add(edge);
         edge.on('mouseover', function () {
             ancestorsEl.forEach(function (item) {
-                item && item.__edge && item.__edge.trigger('emphasis')
-                item && item.highlight()
-            })
+                item && item.__edge && item.__edge.trigger('emphasis');
+                item && item.highlight();
+            });
         })
         .on('mouseout', function () {
             ancestorsEl.forEach(function (item) {
-                item && item.__edge && item.__edge.trigger('normal')
-                item && item.downplay()
-            })
-        })
-        
+                item && item.__edge && item.__edge.trigger('normal');
+                item && item.downplay();
+            });
+        });
+
         symbolEl.on('mouseover', function () {
-            symbolEl.__edge.trigger('mouseover')
-        })
+            symbolEl.__edge.trigger('mouseover');
+        });
         symbolEl.on('mouseout', function () {
-            symbolEl.__edge.trigger('mouseout')
-        })
+            symbolEl.__edge.trigger('mouseout');
+        });
     }
 }
 
-function removeNode (data, dataIndex, symbolEl, group, seriesModel, seriesScope) {
-    var node = data.tree.getNodeByDataIndex(dataIndex)
-    var virtualRoot = data.tree.root
-    var itemModel = node.getModel()
-    var seriesScope = getTreeNodeStyle(node, itemModel, seriesScope)
-    
-    var source = node.parentNode === virtualRoot ? node : node.parentNode || node
-    var sourceLayout
+function removeNode(data, dataIndex, symbolEl, group, seriesModel, seriesScope) {
+    var node = data.tree.getNodeByDataIndex(dataIndex);
+    var virtualRoot = data.tree.root;
+    var itemModel = node.getModel();
+    var seriesScope = getTreeNodeStyle(node, itemModel, seriesScope);
+
+    var source = node.parentNode === virtualRoot ? node : node.parentNode || node;
+    var sourceLayout;
     while (sourceLayout = source.getLayout(), sourceLayout == null) {
-        source = source.parentNode === virtualRoot ? source : source.parentNode || source
+        source = source.parentNode === virtualRoot ? source : source.parentNode || source;
     }
-    
+
     graphic.updateProps(symbolEl, {
         position: [sourceLayout.x + 1, sourceLayout.y + 1]
     }, seriesModel, function () {
-        group.remove(symbolEl)
-        data.setItemGraphicEl(dataIndex, null)
-    })
-    
-    symbolEl.fadeOut(null, {keepLabel: true})
-    var edge = symbolEl.__edge
+        group.remove(symbolEl);
+        data.setItemGraphicEl(dataIndex, null);
+    });
+
+    symbolEl.fadeOut(null, {keepLabel: true});
+    var edge = symbolEl.__edge;
     if (edge) {
         graphic.updateProps(edge, {
             shape: getEdgeShape(seriesScope, sourceLayout, sourceLayout),
@@ -464,33 +468,33 @@ function removeNode (data, dataIndex, symbolEl, group, seriesModel, seriesScope)
                 opacity: 0
             }
         }, seriesModel, function () {
-            group.remove(edge)
-        })
+            group.remove(edge);
+        });
     }
 }
 
-function getEdgeShape (seriesScope, sourceLayout, targetLayout) {
-    var cpx1
-    var cpy1
-    var cpx2
-    var cpy2
-    var orient = seriesScope.orient
-    var x1
-    var x2
-    var y1
-    var y2
-    
+function getEdgeShape(seriesScope, sourceLayout, targetLayout) {
+    var cpx1;
+    var cpy1;
+    var cpx2;
+    var cpy2;
+    var orient = seriesScope.orient;
+    var x1;
+    var x2;
+    var y1;
+    var y2;
+
     if (seriesScope.layout === 'radial') {
-        x1 = sourceLayout.rawX
-        y1 = sourceLayout.rawY
-        x2 = targetLayout.rawX
-        y2 = targetLayout.rawY
-        
-        var radialCoor1 = radialCoordinate(x1, y1)
-        var radialCoor2 = radialCoordinate(x1, y1 + (y2 - y1) * seriesScope.curvature)
-        var radialCoor3 = radialCoordinate(x2, y2 + (y1 - y2) * seriesScope.curvature)
-        var radialCoor4 = radialCoordinate(x2, y2)
-        
+        x1 = sourceLayout.rawX;
+        y1 = sourceLayout.rawY;
+        x2 = targetLayout.rawX;
+        y2 = targetLayout.rawY;
+
+        var radialCoor1 = radialCoordinate(x1, y1);
+        var radialCoor2 = radialCoordinate(x1, y1 + (y2 - y1) * seriesScope.curvature);
+        var radialCoor3 = radialCoordinate(x2, y2 + (y1 - y2) * seriesScope.curvature);
+        var radialCoor4 = radialCoordinate(x2, y2);
+
         return {
             x1: radialCoor1.x,
             y1: radialCoor1.y,
@@ -500,28 +504,28 @@ function getEdgeShape (seriesScope, sourceLayout, targetLayout) {
             cpy1: radialCoor2.y,
             cpx2: radialCoor3.x,
             cpy2: radialCoor3.y
-        }
+        };
     }
     else {
-        x1 = sourceLayout.x
-        y1 = sourceLayout.y
-        x2 = targetLayout.x
-        y2 = targetLayout.y
-        
+        x1 = sourceLayout.x;
+        y1 = sourceLayout.y;
+        x2 = targetLayout.x;
+        y2 = targetLayout.y;
+
         if (orient === 'LR' || orient === 'RL') {
-            cpx1 = x1 + (x2 - x1) * seriesScope.curvature
-            cpy1 = y1
-            cpx2 = x2 + (x1 - x2) * seriesScope.curvature
-            cpy2 = y2
+            cpx1 = x1 + (x2 - x1) * seriesScope.curvature;
+            cpy1 = y1;
+            cpx2 = x2 + (x1 - x2) * seriesScope.curvature;
+            cpy2 = y2;
         }
         if (orient === 'TB' || orient === 'BT') {
-            cpx1 = x1
-            cpy1 = y1 + (y2 - y1) * seriesScope.curvature
-            cpx2 = x2
-            cpy2 = y2 + (y1 - y2) * seriesScope.curvature
+            cpx1 = x1;
+            cpy1 = y1 + (y2 - y1) * seriesScope.curvature;
+            cpx2 = x2;
+            cpy2 = y2 + (y1 - y2) * seriesScope.curvature;
         }
     }
-    
+
     return {
         x1: x1,
         y1: y1,
@@ -531,6 +535,6 @@ function getEdgeShape (seriesScope, sourceLayout, targetLayout) {
         cpy1: cpy1,
         cpx2: cpx2,
         cpy2: cpy2
-    }
-    
+    };
+
 }
