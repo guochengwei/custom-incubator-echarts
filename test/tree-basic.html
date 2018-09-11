@@ -65,7 +65,6 @@ under the License.
                             series:[
                                 {
                                     type: 'tree',
-                                    id: '3',
                                     
                                     data: [data],
 
@@ -111,8 +110,15 @@ under the License.
                                 }
                             ]
                         });
-                        chart.on('click',(e)=>{
-                            console.log(e)
+                        chart.dispatchAction({
+                            type: 'treeExpandAndCollapse',
+                            seriesIndex: 0,
+                            dataName: 'axis'
+                        })
+                        echarts.registerAction({
+                            type: 'treeExpandAndCollapse',
+                            event: 'treeExpandAndCollapse',
+                            update: 'update'
                         })
                         /*setTimeout(function() {
                             var newData = echarts.util.clone(data);

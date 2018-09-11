@@ -421,7 +421,8 @@ Tree.prototype = {
      * @return {module:echarts/data/Tree~TreeNode}
      */
     getNodeByName: function (name) {
-        return this.root.getNodeByName(name);
+        var rawIndex = this.data.getRawIndex(this.data.indexOfName(name));
+        return this._nodes[rawIndex];
     },
 
     /**
