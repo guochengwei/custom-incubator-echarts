@@ -29,18 +29,32 @@ echarts.registerAction({
     type: 'treeExpandAndCollapse',
     event: 'treeExpandAndCollapse',
     update: 'update'
-}, function (payload, ecModel) {
+}, function (payload, ecModel, api) {
     ecModel.eachComponent({mainType: 'series', subType: 'tree', query: payload}, function (seriesModel) {
         var dataIndex = payload.dataIndex;
+        var dataName = payload.dataName;
         var data = seriesModel.getData();
         var tree = data.tree;
-        var node = tree.getNodeByDataIndex(dataIndex) || tree.getNodeByName(payload.dataName);
+        var node = (dataIndex && tree.getNodeByDataIndex(dataIndex)) || (dataName && tree.getNodeListByName(dataName));
+
+        if (Array.isArray(node)) {
+            node = node.length === 1
+                   ? node[0]
+                   : node.find(item => data.getRawDataItem(item.dataIndex).key === payload.dataKey);
+        }
         if (node.isExpand && node.isActive) {
             node.isExpand = false;
         }
         else {
             node.isExpand = true;
         }
+        if (node.children.length !== 0 && node.isExpand) {
+            payload.expand = true;
+        }
+        else {
+            payload.expand = false;
+        }
+        payload.depth = node.depth;
         tree.root.eachNode(function (item) {
             item.isActive = false;
             var el = data.getItemGraphicEl(item.dataIndex);
@@ -48,14 +62,41 @@ echarts.registerAction({
             el && el.__edge && el.__edge.trigger('normal');
         });
         node.getAncestors(true).forEach(function (item) {
-            item.isActive = true;
-            var el = data.getItemGraphicEl(item.dataIndex);
-            el && el.highlight();
-            el && el.__edge && el.__edge.trigger('emphasis');
+            if (!item.isActive) {
+                item.isActive = true;
+                var el = data.getItemGraphicEl(item.dataIndex);
+                el && el.highlight();
+                el && el.__edge && el.__edge.trigger('emphasis');
+            }
         });
     });
 });
 
+echarts.registerAction({
+    type: 'treeSearchHighlight',
+    event: 'treeSearchHighlight',
+    update: 'update'
+}, function (payload, ecModel) {
+    ecModel.eachComponent({mainType: 'series', subType: 'tree', query: payload}, function (seriesModel) {
+        var dataName = payload.dataName;
+        var data = seriesModel.getData();
+        var tree = data.tree;
+        var nodeList = tree.getNodeListByName(dataName);
+        nodeList.forEach(node => {
+            node.getAncestors(true).forEach(item => {
+                if (!item.isActive) {
+                    item.isActive = true;
+                    var el = data.getItemGraphicEl(item.dataIndex);
+                    el && el.highlight();
+                    el && el.__edge && el.__edge.trigger('emphasis');
+                }
+                if (!item.isExpand) {
+                    item.isExpand = true;
+                }
+            });
+        });
+    });
+});
 echarts.registerAction({
     type: 'treeRoam',
     event: 'treeRoam',

@@ -69,6 +69,7 @@ export default echarts.extendChartView({
     },
 
     render: function (seriesModel, ecModel, api, payload) {
+
         var data = seriesModel.getData();
 
         var layoutInfo = seriesModel.layoutInfo;
@@ -83,7 +84,6 @@ export default echarts.extendChartView({
         else {
             group.attr('position', [layoutInfo.x, layoutInfo.y]);
         }
-
         this._updateViewCoordSys(seriesModel);
         this._updateController(seriesModel, ecModel, api);
 
@@ -131,22 +131,75 @@ export default echarts.extendChartView({
         .execute();
 
         this._nodeScaleRatio = seriesModel.get('nodeScaleRatio');
-
         this._updateNodeAndLinkScale(seriesModel);
 
 
         if (seriesScope.expandAndCollapse === true) {
             data.eachItemGraphicEl(function (el, dataIndex) {
-                el.off('click').on('click', function () {
+                el.off('click').on('click', function (e) {
                     api.dispatchAction({
                         type: 'treeExpandAndCollapse',
                         seriesId: seriesModel.id,
-                        dataIndex: dataIndex,
+                        dataIndex: dataIndex
                     });
                 });
             });
         }
         this._data = data;
+        if (seriesModel.get('roamAfterExpandAndCollapse') && payload && payload.type === 'treeExpandAndCollapse') {
+            var animationDurationUpdate = seriesModel.get('animationDurationUpdate');
+            var frames = animationDurationUpdate / 1000 * 60;
+
+            setTimeout(() => {
+
+                var kx = payload.depth === seriesModel.layoutInfo.depth ? 0 : seriesModel.layoutInfo.kx;
+                var ky = seriesModel.layoutInfo.ky;
+
+                var zoom = seriesModel.coordinateSystem.getZoom();
+
+                var roamZoom = [2 - ky / 15, 2 - ky / 20];
+                var _zoom = null;
+                if (payload.expand && zoom < roamZoom[1]) {
+                    _zoom = 1 + (roamZoom[1] - zoom) / frames;
+                }
+                /*else if (payload.expand === false && zoom > 1) {
+                    _zoom = 1 + (roamZoom[0] - zoom) / frames;
+                }*/
+
+                var el = seriesModel.getData().getItemGraphicEl(payload.dataIndex);
+                var oldCenter = this._viewCoordSys.getCenter();
+                var dx = (oldCenter[0] - el.position[0] - kx / (payload.depth + 1)) / frames;
+                var dy = (oldCenter[1] - el.position[1]) / frames;
+                var count = 0;
+                var moveTo = () => {
+                    roamHelper.updateViewOnPan(this._controllerHost, dx, dy);
+                    api.dispatchAction({
+                        seriesId: seriesModel.id,
+                        type: 'treeRoam',
+                        dx: dx,
+                        dy: dy
+                    });
+
+                    if (_zoom) {
+                        var temp = seriesModel.get('center');
+                        roamHelper.updateViewOnZoom(this._controllerHost, _zoom, temp[0], temp[1]);
+                        api.dispatchAction({
+                            seriesId: seriesModel.id,
+                            type: 'treeRoam',
+                            zoom: _zoom,
+                            originX: temp[0],
+                            originY: temp[1]
+                        });
+                    }
+                    this._updateNodeAndLinkScale(seriesModel);
+                    if (count < frames) {
+                        requestAnimationFrame(moveTo);
+                    }
+                    count++;
+                };
+                requestAnimationFrame(moveTo);
+            }, animationDurationUpdate + 100);
+        }
     },
 
     _updateViewCoordSys: function (seriesModel) {

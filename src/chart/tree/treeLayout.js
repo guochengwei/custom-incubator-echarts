@@ -81,7 +81,6 @@ function commonLayout(seriesModel, api) {
                 bottom = node;
             }
         });
-
         var delta = left === right ? 1 : separation(left, right) / 2;
         var tx = delta - left.getLayout().x;
         var kx = 0;
@@ -101,6 +100,9 @@ function commonLayout(seriesModel, api) {
         }
         else {
             var orient = seriesModel.getOrient();
+            seriesModel.layoutInfo.kx = width / ((bottom.depth - 1) || 1);
+            seriesModel.layoutInfo.depth = bottom.depth;
+            seriesModel.layoutInfo.ky = height / (right.getLayout().x + delta + tx);
             if (orient === 'RL' || orient === 'LR') {
                 ky = height / (right.getLayout().x + delta + tx);
                 kx = width / ((bottom.depth - 1) || 1);

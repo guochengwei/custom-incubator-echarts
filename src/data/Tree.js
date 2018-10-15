@@ -227,7 +227,7 @@ TreeNode.prototype = {
      */
     setLayout: function (layout, merge) {
         this.dataIndex >= 0
-            && this.hostTree.data.setItemLayout(this.dataIndex, layout, merge);
+        && this.hostTree.data.setItemLayout(this.dataIndex, layout, merge);
     },
 
     /**
@@ -278,7 +278,7 @@ TreeNode.prototype = {
      */
     setVisual: function (key, value) {
         this.dataIndex >= 0
-            && this.hostTree.data.setItemVisual(this.dataIndex, key, value);
+        && this.hostTree.data.setItemVisual(this.dataIndex, key, value);
     },
 
     /**
@@ -403,7 +403,7 @@ Tree.prototype = {
      * @param {Function} cb
      * @param {Object}   [context]
      */
-    eachNode: function(options, cb, context) {
+    eachNode: function (options, cb, context) {
         this.root.eachNode(options, cb, context);
     },
 
@@ -423,6 +423,18 @@ Tree.prototype = {
     getNodeByName: function (name) {
         var rawIndex = this.data.getRawIndex(this.data.indexOfName(name));
         return this._nodes[rawIndex];
+    },
+    /**
+     * @param {string} name
+     * @return {module:echarts/data/Tree~TreeNode}
+     */
+    getNodeListByName: function (name) {
+        return this.data._nameList.reduce((arr, item, idx) => {
+            if (name === item) {
+                arr.push(this._nodes[idx]);
+            }
+            return arr;
+        }, []);
     },
 
     /**
@@ -489,8 +501,8 @@ Tree.createTree = function (dataRoot, hostModel, treeOptions) {
 
         var node = new TreeNode(dataNode.name, tree);
         parentNode
-            ? addChild(node, parentNode)
-            : (tree.root = node);
+        ? addChild(node, parentNode)
+        : (tree.root = node);
 
         tree._nodes.push(node);
 

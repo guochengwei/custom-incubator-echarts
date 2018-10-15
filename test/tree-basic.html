@@ -54,7 +54,7 @@ under the License.
                         echarts.util.each(data.children, function (datum, index) {
                             index % 2 === 0 && (datum.collapsed = true);
                         });
-
+                        data.children = data.children.concat(data.children[data.children.length-1])
                         chart.setOption({
 
                             tooltip: {
@@ -75,6 +75,7 @@ under the License.
                                     roam:true,
                                     symbol:'emptyRoundRect',
                                     symbolSize: 10,
+                                    nodeScaleRatio: 0.2,
 
                                     // initialTreeDepth: -1,
 
@@ -105,21 +106,30 @@ under the License.
                                     },
                                     hoverAnimation:true,
                                     // expandAndCollapse: false,
-                                    animationDuration: 550,
-                                    animationDurationUpdate: 750
+                                    animationDuration: 300,
+                                    animationDurationUpdate: 300,
+                                    roamAfterExpandAndCollapse: true,
                                 }
                             ]
                         });
-                        chart.dispatchAction({
-                            type: 'treeExpandAndCollapse',
-                            seriesIndex: 0,
-                            dataName: 'axis'
-                        })
                         echarts.registerAction({
                             type: 'treeExpandAndCollapse',
                             event: 'treeExpandAndCollapse',
                             update: 'update'
                         })
+                        echarts.registerAction({
+                            type: 'treeSearchHighlight',
+                            event: 'treeSearchHighlight',
+                            update: 'update'
+                        })
+                        
+                        
+                        chart.dispatchAction({
+                            type: 'treeSearchHighlight',
+                            seriesIndex: 0,
+                            dataName: 'axis'
+                        })
+                        
                         /*setTimeout(function() {
                             var newData = echarts.util.clone(data);
                             newData.children.splice(0, 1);

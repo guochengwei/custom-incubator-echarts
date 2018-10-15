@@ -56,22 +56,27 @@ export default SeriesModel.extend({
 
         var treeDepth = 0;
 
+        var treeWidth = {};
+
         tree.eachNode('preorder', function (node) {
+            treeWidth[node.depth] || (treeWidth[node.depth] = 0);
+            treeWidth[node.depth] += node.children.length;
             if (node.depth > treeDepth) {
                 treeDepth = node.depth;
             }
         });
-
+        var zoomRadio = Object.keys(treeWidth).map(item => treeWidth[item] / 1000 + 1);
+        option.zoomRadio = zoomRadio;
         var expandAndCollapse = option.expandAndCollapse;
         var expandTreeDepth = (expandAndCollapse && option.initialTreeDepth >= 0)
-            ? option.initialTreeDepth : treeDepth;
+                              ? option.initialTreeDepth : treeDepth;
 
         tree.root.eachNode('preorder', function (node) {
             var item = node.hostTree.data.getRawDataItem(node.dataIndex);
             // Add item.collapsed != null, because users can collapse node original in the series.data.
             node.isExpand = (item && item.collapsed != null)
-                ? !item.collapsed
-                : node.depth <= expandTreeDepth;
+                            ? !item.collapsed
+                            : node.depth <= expandTreeDepth;
         });
 
         return tree.data;
@@ -141,6 +146,7 @@ export default SeriesModel.extend({
         center: null,
 
         zoom: 1,
+        scaleLimit: [0.8, 2.3],
 
         // The orient of orthoginal layout, can be setted to 'LR', 'TB', 'RL', 'BT'.
         // and the backward compatibility configuration 'horizontal = LR', 'vertical = TB'.
@@ -181,6 +187,10 @@ export default SeriesModel.extend({
 
         animationDuration: 700,
 
-        animationDurationUpdate: 1000
+        animationDurationUpdate: 1000,
+
+        roamAfterExpandAndCollapse: false,
+
+        roamZoom: 1.2
     }
 });

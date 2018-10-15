@@ -6869,7 +6869,7 @@ Layer.prototype = {
     }
 };
 
-var requestAnimationFrame = (
+var requestAnimationFrame$1 = (
     typeof window !== 'undefined'
     && (
         (window.requestAnimationFrame && window.requestAnimationFrame.bind(window))
@@ -8985,7 +8985,7 @@ Painter.prototype = {
 
         if (!finished) {
             var self = this;
-            requestAnimationFrame(function () {
+            requestAnimationFrame$1(function () {
                 self._paintList(list, paintAll, redrawId);
             });
         }
@@ -9985,13 +9985,13 @@ Animation.prototype = {
         function step() {
             if (self._running) {
 
-                requestAnimationFrame(step);
+                requestAnimationFrame$1(step);
 
                 !self._paused && self._update();
             }
         }
 
-        requestAnimationFrame(step);
+        requestAnimationFrame$1(step);
     },
 
     /**
@@ -35244,14 +35244,14 @@ symbolProto._updateCommon = function (data, idx, symbolSize, seriesScope) {
         return useNameLabel ? data.getName(idx) : getDefaultLabel(data, idx);
     }
 
-    
+
 
     symbolPath.hoverStyle = hoverItemStyle;
 
     // FIXME
     // Do not use symbol.trigger('emphasis'), but use symbol.highlight() instead.
     setHoverStyle(symbolPath);
-    
+
     symbolPath.off('mouseover')
     .off('mouseout')
     .off('emphasis')
@@ -47247,7 +47247,7 @@ TreeNode.prototype = {
      */
     setLayout: function (layout, merge$$1) {
         this.dataIndex >= 0
-            && this.hostTree.data.setItemLayout(this.dataIndex, layout, merge$$1);
+        && this.hostTree.data.setItemLayout(this.dataIndex, layout, merge$$1);
     },
 
     /**
@@ -47298,7 +47298,7 @@ TreeNode.prototype = {
      */
     setVisual: function (key, value) {
         this.dataIndex >= 0
-            && this.hostTree.data.setItemVisual(this.dataIndex, key, value);
+        && this.hostTree.data.setItemVisual(this.dataIndex, key, value);
     },
 
     /**
@@ -47423,7 +47423,7 @@ Tree.prototype = {
      * @param {Function} cb
      * @param {Object}   [context]
      */
-    eachNode: function(options, cb, context) {
+    eachNode: function (options, cb, context) {
         this.root.eachNode(options, cb, context);
     },
 
@@ -47443,6 +47443,18 @@ Tree.prototype = {
     getNodeByName: function (name) {
         var rawIndex = this.data.getRawIndex(this.data.indexOfName(name));
         return this._nodes[rawIndex];
+    },
+    /**
+     * @param {string} name
+     * @return {module:echarts/data/Tree~TreeNode}
+     */
+    getNodeListByName: function (name) {
+        return this.data._nameList.reduce((arr, item, idx) => {
+            if (name === item) {
+                arr.push(this._nodes[idx]);
+            }
+            return arr;
+        }, []);
     },
 
     /**
@@ -47509,8 +47521,8 @@ Tree.createTree = function (dataRoot, hostModel, treeOptions) {
 
         var node = new TreeNode(dataNode.name, tree);
         parentNode
-            ? addChild(node, parentNode)
-            : (tree.root = node);
+        ? addChild(node, parentNode)
+        : (tree.root = node);
 
         tree._nodes.push(node);
 
@@ -47613,22 +47625,27 @@ SeriesModel.extend({
 
         var treeDepth = 0;
 
+        var treeWidth = {};
+
         tree.eachNode('preorder', function (node) {
+            treeWidth[node.depth] || (treeWidth[node.depth] = 0);
+            treeWidth[node.depth] += node.children.length;
             if (node.depth > treeDepth) {
                 treeDepth = node.depth;
             }
         });
-
+        var zoomRadio = Object.keys(treeWidth).map(item => treeWidth[item] / 1000 + 1);
+        option.zoomRadio = zoomRadio;
         var expandAndCollapse = option.expandAndCollapse;
         var expandTreeDepth = (expandAndCollapse && option.initialTreeDepth >= 0)
-            ? option.initialTreeDepth : treeDepth;
+                              ? option.initialTreeDepth : treeDepth;
 
         tree.root.eachNode('preorder', function (node) {
             var item = node.hostTree.data.getRawDataItem(node.dataIndex);
             // Add item.collapsed != null, because users can collapse node original in the series.data.
             node.isExpand = (item && item.collapsed != null)
-                ? !item.collapsed
-                : node.depth <= expandTreeDepth;
+                            ? !item.collapsed
+                            : node.depth <= expandTreeDepth;
         });
 
         return tree.data;
@@ -47698,6 +47715,7 @@ SeriesModel.extend({
         center: null,
 
         zoom: 1,
+        scaleLimit: [0.8, 2.3],
 
         // The orient of orthoginal layout, can be setted to 'LR', 'TB', 'RL', 'BT'.
         // and the backward compatibility configuration 'horizontal = LR', 'vertical = TB'.
@@ -47738,7 +47756,11 @@ SeriesModel.extend({
 
         animationDuration: 700,
 
-        animationDurationUpdate: 1000
+        animationDurationUpdate: 1000,
+
+        roamAfterExpandAndCollapse: false,
+
+        roamZoom: 1.2
     }
 });
 
@@ -48087,6 +48109,7 @@ extendChartView({
     },
 
     render: function (seriesModel, ecModel, api, payload) {
+
         var data = seriesModel.getData();
 
         var layoutInfo = seriesModel.layoutInfo;
@@ -48101,7 +48124,6 @@ extendChartView({
         else {
             group.attr('position', [layoutInfo.x, layoutInfo.y]);
         }
-
         this._updateViewCoordSys(seriesModel);
         this._updateController(seriesModel, ecModel, api);
 
@@ -48149,22 +48171,75 @@ extendChartView({
         .execute();
 
         this._nodeScaleRatio = seriesModel.get('nodeScaleRatio');
-
         this._updateNodeAndLinkScale(seriesModel);
 
 
         if (seriesScope.expandAndCollapse === true) {
             data.eachItemGraphicEl(function (el, dataIndex) {
-                el.off('click').on('click', function () {
+                el.off('click').on('click', function (e) {
                     api.dispatchAction({
                         type: 'treeExpandAndCollapse',
                         seriesId: seriesModel.id,
-                        dataIndex: dataIndex,
+                        dataIndex: dataIndex
                     });
                 });
             });
         }
         this._data = data;
+        if (seriesModel.get('roamAfterExpandAndCollapse') && payload && payload.type === 'treeExpandAndCollapse') {
+            var animationDurationUpdate = seriesModel.get('animationDurationUpdate');
+            var frames = animationDurationUpdate / 1000 * 60;
+
+            setTimeout(() => {
+
+                var kx = payload.depth === seriesModel.layoutInfo.depth ? 0 : seriesModel.layoutInfo.kx;
+                var ky = seriesModel.layoutInfo.ky;
+
+                var zoom = seriesModel.coordinateSystem.getZoom();
+
+                var roamZoom = [2 - ky / 15, 2 - ky / 20];
+                var _zoom = null;
+                if (payload.expand && zoom < roamZoom[1]) {
+                    _zoom = 1 + (roamZoom[1] - zoom) / frames;
+                }
+                /*else if (payload.expand === false && zoom > 1) {
+                    _zoom = 1 + (roamZoom[0] - zoom) / frames;
+                }*/
+
+                var el = seriesModel.getData().getItemGraphicEl(payload.dataIndex);
+                var oldCenter = this._viewCoordSys.getCenter();
+                var dx = (oldCenter[0] - el.position[0] - kx / (payload.depth + 1)) / frames;
+                var dy = (oldCenter[1] - el.position[1]) / frames;
+                var count = 0;
+                var moveTo = () => {
+                    updateViewOnPan(this._controllerHost, dx, dy);
+                    api.dispatchAction({
+                        seriesId: seriesModel.id,
+                        type: 'treeRoam',
+                        dx: dx,
+                        dy: dy
+                    });
+
+                    if (_zoom) {
+                        var temp = seriesModel.get('center');
+                        updateViewOnZoom(this._controllerHost, _zoom, temp[0], temp[1]);
+                        api.dispatchAction({
+                            seriesId: seriesModel.id,
+                            type: 'treeRoam',
+                            zoom: _zoom,
+                            originX: temp[0],
+                            originY: temp[1]
+                        });
+                    }
+                    this._updateNodeAndLinkScale(seriesModel);
+                    if (count < frames) {
+                        requestAnimationFrame(moveTo);
+                    }
+                    count++;
+                };
+                requestAnimationFrame(moveTo);
+            }, animationDurationUpdate + 100);
+        }
     },
 
     _updateViewCoordSys: function (seriesModel) {
@@ -48585,18 +48660,32 @@ registerAction({
     type: 'treeExpandAndCollapse',
     event: 'treeExpandAndCollapse',
     update: 'update'
-}, function (payload, ecModel) {
+}, function (payload, ecModel, api) {
     ecModel.eachComponent({mainType: 'series', subType: 'tree', query: payload}, function (seriesModel) {
         var dataIndex = payload.dataIndex;
+        var dataName = payload.dataName;
         var data = seriesModel.getData();
         var tree = data.tree;
-        var node = tree.getNodeByDataIndex(dataIndex) || tree.getNodeByName(payload.dataName);
+        var node = (dataIndex && tree.getNodeByDataIndex(dataIndex)) || (dataName && tree.getNodeListByName(dataName));
+
+        if (Array.isArray(node)) {
+            node = node.length === 1
+                   ? node[0]
+                   : node.find(item => data.getRawDataItem(item.dataIndex).key === payload.dataKey);
+        }
         if (node.isExpand && node.isActive) {
             node.isExpand = false;
         }
         else {
             node.isExpand = true;
         }
+        if (node.children.length !== 0 && node.isExpand) {
+            payload.expand = true;
+        }
+        else {
+            payload.expand = false;
+        }
+        payload.depth = node.depth;
         tree.root.eachNode(function (item) {
             item.isActive = false;
             var el = data.getItemGraphicEl(item.dataIndex);
@@ -48604,14 +48693,41 @@ registerAction({
             el && el.__edge && el.__edge.trigger('normal');
         });
         node.getAncestors(true).forEach(function (item) {
-            item.isActive = true;
-            var el = data.getItemGraphicEl(item.dataIndex);
-            el && el.highlight();
-            el && el.__edge && el.__edge.trigger('emphasis');
+            if (!item.isActive) {
+                item.isActive = true;
+                var el = data.getItemGraphicEl(item.dataIndex);
+                el && el.highlight();
+                el && el.__edge && el.__edge.trigger('emphasis');
+            }
         });
     });
 });
 
+registerAction({
+    type: 'treeSearchHighlight',
+    event: 'treeSearchHighlight',
+    update: 'update'
+}, function (payload, ecModel) {
+    ecModel.eachComponent({mainType: 'series', subType: 'tree', query: payload}, function (seriesModel) {
+        var dataName = payload.dataName;
+        var data = seriesModel.getData();
+        var tree = data.tree;
+        var nodeList = tree.getNodeListByName(dataName);
+        nodeList.forEach(node => {
+            node.getAncestors(true).forEach(item => {
+                if (!item.isActive) {
+                    item.isActive = true;
+                    var el = data.getItemGraphicEl(item.dataIndex);
+                    el && el.highlight();
+                    el && el.__edge && el.__edge.trigger('emphasis');
+                }
+                if (!item.isExpand) {
+                    item.isExpand = true;
+                }
+            });
+        });
+    });
+});
 registerAction({
     type: 'treeRoam',
     event: 'treeRoam',
@@ -48771,7 +48887,6 @@ function commonLayout(seriesModel, api) {
                 bottom = node;
             }
         });
-
         var delta = left === right ? 1 : separation$$1(left, right) / 2;
         var tx = delta - left.getLayout().x;
         var kx = 0;
@@ -48791,6 +48906,9 @@ function commonLayout(seriesModel, api) {
         }
         else {
             var orient = seriesModel.getOrient();
+            seriesModel.layoutInfo.kx = width / ((bottom.depth - 1) || 1);
+            seriesModel.layoutInfo.depth = bottom.depth;
+            seriesModel.layoutInfo.ky = height / (right.getLayout().x + delta + tx);
             if (orient === 'RL' || orient === 'LR') {
                 ky = height / (right.getLayout().x + delta + tx);
                 kx = width / ((bottom.depth - 1) || 1);
