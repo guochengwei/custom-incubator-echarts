@@ -42,18 +42,24 @@ echarts.registerAction({
                    ? node[0]
                    : node.find(item => data.getRawDataItem(item.dataIndex).key === payload.dataKey);
         }
+        if (!node) {
+            payload = null;
+            return;
+        }
         if (node.isExpand && node.isActive) {
             node.isExpand = false;
+            payload.expand = false;
         }
         else {
+            if (node.children.length !== 0 && !node.isExpand) {
+                payload.expand = true;
+            }
             node.isExpand = true;
         }
         if (node.children.length !== 0 && node.isExpand) {
-            payload.expand = true;
+            payload.zoom = true;
         }
-        else {
-            payload.expand = false;
-        }
+        payload.dataIndex = node.dataIndex;
         payload.depth = node.depth;
         tree.root.eachNode(function (item) {
             item.isActive = false;
@@ -82,6 +88,12 @@ echarts.registerAction({
         var data = seriesModel.getData();
         var tree = data.tree;
         var nodeList = tree.getNodeListByName(dataName);
+        tree.root.eachNode(function (item) {
+            item.isActive = false;
+            var el = data.getItemGraphicEl(item.dataIndex);
+            el && el.downplay();
+            el && el.__edge && el.__edge.trigger('normal');
+        });
         nodeList.forEach(node => {
             node.getAncestors(true).forEach(item => {
                 if (!item.isActive) {

@@ -191,6 +191,6 @@ export default SeriesModel.extend({
 
         roamAfterExpandAndCollapse: false,
 
-        roamZoom: 1.2
+        roamZoomRadio: 1.1
     }
 });

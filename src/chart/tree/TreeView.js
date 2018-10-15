@@ -152,15 +152,18 @@ export default echarts.extendChartView({
 
             setTimeout(() => {
 
-                var kx = payload.depth === seriesModel.layoutInfo.depth ? 0 : seriesModel.layoutInfo.kx;
+                var kx = seriesModel.layoutInfo.kx / (payload.depth + 2);
+                if (payload.depth === seriesModel.layoutInfo.depth) {
+                    kx = 0;
+                }
                 var ky = seriesModel.layoutInfo.ky;
 
                 var zoom = seriesModel.coordinateSystem.getZoom();
-
+                var roamZoomRadio = seriesModel.get('seriesModel');
                 var roamZoom = [2 - ky / 15, 2 - ky / 20];
                 var _zoom = null;
-                if (payload.expand && zoom < roamZoom[1]) {
-                    _zoom = 1 + (roamZoom[1] - zoom) / frames;
+                if (payload.zoom && zoom < roamZoom[1]) {
+                    _zoom = 1 + (roamZoom[1] * roamZoomRadio - zoom) / frames;
                 }
                 /*else if (payload.expand === false && zoom > 1) {
                     _zoom = 1 + (roamZoom[0] - zoom) / frames;
@@ -168,7 +171,7 @@ export default echarts.extendChartView({
 
                 var el = seriesModel.getData().getItemGraphicEl(payload.dataIndex);
                 var oldCenter = this._viewCoordSys.getCenter();
-                var dx = (oldCenter[0] - el.position[0] - kx / (payload.depth + 1)) / frames;
+                var dx = (oldCenter[0] - el.position[0] - kx) / frames;
                 var dy = (oldCenter[1] - el.position[1]) / frames;
                 var count = 0;
                 var moveTo = () => {
@@ -198,7 +201,7 @@ export default echarts.extendChartView({
                     count++;
                 };
                 requestAnimationFrame(moveTo);
-            }, animationDurationUpdate + 100);
+            }, payload.expand ? animationDurationUpdate + 50 : 0);
         }
     },
 

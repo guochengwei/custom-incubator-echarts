@@ -47760,7 +47760,7 @@ SeriesModel.extend({
 
         roamAfterExpandAndCollapse: false,
 
-        roamZoom: 1.2
+        roamZoomRadio: 1.1
     }
 });
 
@@ -48192,15 +48192,18 @@ extendChartView({
 
             setTimeout(() => {
 
-                var kx = payload.depth === seriesModel.layoutInfo.depth ? 0 : seriesModel.layoutInfo.kx;
+                var kx = seriesModel.layoutInfo.kx / (payload.depth + 2);
+                if (payload.depth === seriesModel.layoutInfo.depth) {
+                    kx = 0;
+                }
                 var ky = seriesModel.layoutInfo.ky;
 
                 var zoom = seriesModel.coordinateSystem.getZoom();
-
+                var roamZoomRadio = seriesModel.get('seriesModel');
                 var roamZoom = [2 - ky / 15, 2 - ky / 20];
                 var _zoom = null;
-                if (payload.expand && zoom < roamZoom[1]) {
-                    _zoom = 1 + (roamZoom[1] - zoom) / frames;
+                if (payload.zoom && zoom < roamZoom[1]) {
+                    _zoom = 1 + (roamZoom[1] * roamZoomRadio - zoom) / frames;
                 }
                 /*else if (payload.expand === false && zoom > 1) {
                     _zoom = 1 + (roamZoom[0] - zoom) / frames;
@@ -48208,7 +48211,7 @@ extendChartView({
 
                 var el = seriesModel.getData().getItemGraphicEl(payload.dataIndex);
                 var oldCenter = this._viewCoordSys.getCenter();
-                var dx = (oldCenter[0] - el.position[0] - kx / (payload.depth + 1)) / frames;
+                var dx = (oldCenter[0] - el.position[0] - kx) / frames;
                 var dy = (oldCenter[1] - el.position[1]) / frames;
                 var count = 0;
                 var moveTo = () => {
@@ -48238,7 +48241,7 @@ extendChartView({
                     count++;
                 };
                 requestAnimationFrame(moveTo);
-            }, animationDurationUpdate + 100);
+            }, payload.expand ? animationDurationUpdate + 50 : 0);
         }
     },
 
@@ -48673,18 +48676,24 @@ registerAction({
                    ? node[0]
                    : node.find(item => data.getRawDataItem(item.dataIndex).key === payload.dataKey);
         }
+        if (!node) {
+            payload = null;
+            return;
+        }
         if (node.isExpand && node.isActive) {
             node.isExpand = false;
+            payload.expand = false;
         }
         else {
+            if (node.children.length !== 0 && !node.isExpand) {
+                payload.expand = true;
+            }
             node.isExpand = true;
         }
         if (node.children.length !== 0 && node.isExpand) {
-            payload.expand = true;
+            payload.zoom = true;
         }
-        else {
-            payload.expand = false;
-        }
+        payload.dataIndex = node.dataIndex;
         payload.depth = node.depth;
         tree.root.eachNode(function (item) {
             item.isActive = false;
@@ -48713,6 +48722,12 @@ registerAction({
         var data = seriesModel.getData();
         var tree = data.tree;
         var nodeList = tree.getNodeListByName(dataName);
+        tree.root.eachNode(function (item) {
+            item.isActive = false;
+            var el = data.getItemGraphicEl(item.dataIndex);
+            el && el.downplay();
+            el && el.__edge && el.__edge.trigger('normal');
+        });
         nodeList.forEach(node => {
             node.getAncestors(true).forEach(item => {
                 if (!item.isActive) {
