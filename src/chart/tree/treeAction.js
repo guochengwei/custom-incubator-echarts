@@ -95,9 +95,10 @@ echarts.registerAction({
             el && el.__edge && el.__edge.trigger('normal');
         });
         nodeList.forEach(node => {
+            // data.getItemGraphicEl(node.dataIndex);
             node.getAncestors(true).forEach(item => {
                 if (!item.isActive) {
-                    item.isActive = true;
+                    // item.isActive = true;
                     var el = data.getItemGraphicEl(item.dataIndex);
                     el && el.highlight();
                     el && el.__edge && el.__edge.trigger('emphasis');
@@ -106,6 +107,7 @@ echarts.registerAction({
                     item.isExpand = true;
                 }
             });
+            node.isActive = true;
         });
     });
 });

@@ -146,7 +146,10 @@ export default SeriesModel.extend({
         center: null,
 
         zoom: 1,
-        scaleLimit: [0.8, 2.3],
+        scaleLimit: {
+            min: 0.8,
+            max: 2.5
+        },
 
         // The orient of orthoginal layout, can be setted to 'LR', 'TB', 'RL', 'BT'.
         // and the backward compatibility configuration 'horizontal = LR', 'vertical = TB'.
