@@ -16081,7 +16081,7 @@ function cacheElementStl(el) {
     var elStyle = el.style;
 
     for (var name in hoverStyle) {
-        // See comment in `doSingleEnterHover`.
+        // See comment in `singleEnterEmphasis`.
         if (hoverStyle[name] != null) {
             normalStyle[name] = elStyle[name];
         }
@@ -16092,7 +16092,7 @@ function cacheElementStl(el) {
     normalStyle.stroke = elStyle.stroke;
 }
 
-function doSingleEnterHover(el) {
+function singleEnterEmphasis(el) {
     var hoverStl = el.__hoverStl;
 
     if (!hoverStl || el.__highlighted) {
@@ -16144,25 +16144,18 @@ function doSingleEnterHover(el) {
     // only properties that is not `null/undefined` can be set. The disadventage:
     // null/undefined can not be used to remove style any more in `emphasis`.
     targetStyle.extendFrom(hoverStl);
-<<<<<<< HEAD
 
     setDefaultHoverFillStroke(targetStyle, hoverStl, 'fill');
     setDefaultHoverFillStroke(targetStyle, hoverStl, 'stroke');
 
     applyDefaultTextStyle(targetStyle);
 
-=======
-
-    setDefaultHoverFillStroke(targetStyle, hoverStl, 'fill');
-    setDefaultHoverFillStroke(targetStyle, hoverStl, 'stroke');
-
-    applyDefaultTextStyle(targetStyle);
-
->>>>>>> apache-master
     if (!useHoverLayer) {
         el.dirty(false);
         el.z2 += 1;
     }
+
+    el.__extraOnEmphasis && el.__extraOnEmphasis();
 }
 
 function setDefaultHoverFillStroke(targetStyle, hoverStyle, prop) {
@@ -16171,9 +16164,12 @@ function setDefaultHoverFillStroke(targetStyle, hoverStyle, prop) {
     }
 }
 
-function doSingleLeaveHover(el) {
+function singleEnterNormal(el) {
     if (el.__highlighted) {
         doSingleRestoreHoverStyle(el);
+
+        el.__extraOnNormal && el.__extraOnNormal();
+
         el.__highlighted = false;
     }
 }
@@ -16220,38 +16216,48 @@ function traverseCall(el, method) {
  *        as `false` to disable the hover style.
  *        Otherwise, use the default hover style if not provided.
  * @param {Object} [opt]
- * @param {boolean} [opt.hoverSilentOnTouch=false] See `graphic.setAsHoverStyleTrigger`
+ * @param {boolean} [opt.hoverSilentOnTouch=false] See `graphic.setAsHighDownDispatcher`
  */
 function setElementHoverStyle(el, hoverStl) {
     hoverStl = el.__hoverStl = hoverStl !== false && (hoverStl || {});
     el.__hoverStlDirty = true;
 
     if (el.__highlighted) {
-        doSingleLeaveHover(el);
-        doSingleEnterHover(el);
+        singleEnterNormal(el);
+        singleEnterEmphasis(el);
     }
 }
 
 /**
-<<<<<<< HEAD
-=======
- * Emphasis (called by API) has higher priority than `mouseover`.
+ * Set customized emphasis effect like scale, animation.
+ * If calling this method more than once with the same
+ * `onEmphasis` and `onNormal` function, it will not
+ * add but do nothing.
+ *
+ * Highlight that triggered by API (
+ *     `chart.dispatchAction({type: 'highlight'});`
+ *     or `el.trigger('emphasis');`
+ * ) has higher priority than that triggered by `mouseover`.
  * When element has been called to be entered emphasis, mouse over
  * should not trigger the highlight effect (for example, animation
  * scale) again, and `mouseout` should not downplay the highlight
  * effect. So the listener of `mouseover` and `mouseout` should
  * check `isInEmphasis`.
  *
->>>>>>> apache-master
- * @param {module:zrender/Element} el
- * @return {boolean}
+ * @param {module:zrender/src/Element} el element that will take the effect.
+ * @param {Function} onEmphasis
+ * @param {Function} onNormal
  */
-function isInEmphasis(el) {
-<<<<<<< HEAD
-    return el && el.__isEmphasis;
-=======
-    return el && el.__isEmphasisEntered;
->>>>>>> apache-master
+function setExtraHighDownEffect(el, onEmphasis, onNormal) {
+    el.__extraOnEmphasis = onEmphasis;
+    el.__extraOnNormal = onNormal;
+}
+
+/**
+ * @param {module:zrender/src/Element} el element that will take the effect.
+ */
+function removeExtraHighDownEffect(el) {
+    el.__extraOnEmphasis = el.__extraOnNormal = null;
 }
 
 function onElementMouseOver(e) {
@@ -16259,12 +16265,8 @@ function onElementMouseOver(e) {
         return;
     }
 
-    // Only if element is not in emphasis status
-<<<<<<< HEAD
-    !this.__isEmphasis && traverseCall(this, doSingleEnterHover);
-=======
-    !this.__isEmphasisEntered && traverseCall(this, doSingleEnterHover);
->>>>>>> apache-master
+    // API highlight has higher priority than mouse highlight.
+    !this.__doesEmphasisEnteredByAPI && traverseCall(this, singleEnterEmphasis);
 }
 
 function onElementMouseOut(e) {
@@ -16272,30 +16274,18 @@ function onElementMouseOut(e) {
         return;
     }
 
-    // Only if element is not in emphasis status
-<<<<<<< HEAD
-    !this.__isEmphasis && traverseCall(this, doSingleLeaveHover);
+    // API highlight has higher priority than mouse highlight.
+    !this.__doesEmphasisEnteredByAPI && traverseCall(this, singleEnterNormal);
 }
 
-function enterEmphasis() {
-    this.__isEmphasis = true;
-=======
-    !this.__isEmphasisEntered && traverseCall(this, doSingleLeaveHover);
+function onEnterEmphasisByAPI() {
+    this.__doesEmphasisEnteredByAPI = true;
+    traverseCall(this, singleEnterEmphasis);
 }
 
-function enterEmphasis() {
-    this.__isEmphasisEntered = true;
->>>>>>> apache-master
-    traverseCall(this, doSingleEnterHover);
-}
-
-function leaveEmphasis() {
-<<<<<<< HEAD
-    this.__isEmphasis = false;
-=======
-    this.__isEmphasisEntered = false;
->>>>>>> apache-master
-    traverseCall(this, doSingleLeaveHover);
+function onEnterNormalByAPI() {
+    this.__doesEmphasisEnteredByAPI = false;
+    traverseCall(this, singleEnterNormal);
 }
 
 /**
@@ -16313,7 +16303,7 @@ function leaveEmphasis() {
  * @param {module:zrender/Element} el
  * @param {Object|boolean} [hoverStyle] See `graphic.setElementHoverStyle`.
  * @param {Object} [opt]
- * @param {boolean} [opt.hoverSilentOnTouch=false] See `graphic.setAsHoverStyleTrigger`.
+ * @param {boolean} [opt.hoverSilentOnTouch=false] See `graphic.setAsHighDownDispatcher`.
  */
 function setHoverStyle(el, hoverStyle, opt) {
     el.isGroup
@@ -16324,7 +16314,7 @@ function setHoverStyle(el, hoverStyle, opt) {
         })
         : setElementHoverStyle(el, el.hoverStyle || hoverStyle);
 
-    setAsHoverStyleTrigger(el, opt);
+    setAsHighDownDispatcher(el, opt);
 }
 
 /**
@@ -16340,22 +16330,30 @@ function setHoverStyle(el, hoverStyle, opt) {
  *        In this case, hoverSilentOnTouch should be used to disable hover-highlight
  *        on touch device.
  */
-function setAsHoverStyleTrigger(el, opt) {
+function setAsHighDownDispatcher(el, opt) {
     var disable = opt === false;
     el.__hoverSilentOnTouch = opt != null && opt.hoverSilentOnTouch;
 
     // Simple optimize, since this method might be
     // called for each elements of a group in some cases.
-    if (!disable || el.__hoverStyleTrigger) {
+    if (!disable || el.__highDownDispatcher) {
         var method = disable ? 'off' : 'on';
 
         // Duplicated function will be auto-ignored, see Eventful.js.
         el[method]('mouseover', onElementMouseOver)[method]('mouseout', onElementMouseOut);
         // Emphasis, normal can be triggered manually
-        el[method]('emphasis', enterEmphasis)[method]('normal', leaveEmphasis);
+        el[method]('emphasis', onEnterEmphasisByAPI)[method]('normal', onEnterNormalByAPI);
 
-        el.__hoverStyleTrigger = !disable;
+        el.__highDownDispatcher = !disable;
     }
+}
+
+/**
+ * @param {module:zrender/src/Element} el
+ * @return {boolean}
+ */
+function isHighDownDispatcher(el) {
+    return !!(el && el.__highDownDispatcher);
 }
 
 /**
@@ -16657,13 +16655,6 @@ function getAutoColor(color, opt) {
 // text position changing when hovering or being emphasis should be
 // considered, where the `insideRollback` enables to restore the style.
 function applyDefaultTextStyle(textStyle) {
-<<<<<<< HEAD
-    if (textStyle.textFill != null) {
-        return;
-    }
-
-    var opt = textStyle.insideRollbackOpt;
-=======
     var opt = textStyle.insideRollbackOpt;
 
     // Only insideRollbackOpt create (setTextStyleCommon used),
@@ -16672,7 +16663,6 @@ function applyDefaultTextStyle(textStyle) {
         return;
     }
 
->>>>>>> apache-master
     var useInsideStyle = opt.useInsideStyle;
     var textPosition = textStyle.insideRawTextPosition;
     var insideRollback;
@@ -17011,9 +17001,11 @@ var graphic = (Object.freeze || Object)({
 	subPixelOptimizeRect: subPixelOptimizeRect,
 	subPixelOptimize: subPixelOptimize,
 	setElementHoverStyle: setElementHoverStyle,
-	isInEmphasis: isInEmphasis,
+	setExtraHighDownEffect: setExtraHighDownEffect,
+	removeExtraHighDownEffect: removeExtraHighDownEffect,
 	setHoverStyle: setHoverStyle,
-	setAsHoverStyleTrigger: setAsHoverStyleTrigger,
+	setAsHighDownDispatcher: setAsHighDownDispatcher,
+	isHighDownDispatcher: isHighDownDispatcher,
 	setLabelStyle: setLabelStyle,
 	setTextStyle: setTextStyle,
 	setText: setText,
@@ -20530,7 +20522,7 @@ var GlobalModel = Model.extend({
      * After filtering, series may be different.
      * frome raw series.
      *
-     * @parma {string} subType
+     * @param {string} subType.
      * @param {Function} cb
      * @param {*} context
      */
@@ -22246,11 +22238,8 @@ var dataFormatMixin = {
         var tooltipModel = this.ecModel.getComponent('tooltip');
         var renderModeOption = tooltipModel && tooltipModel.get('renderMode');
         var renderMode = getTooltipRenderMode(renderModeOption);
-<<<<<<< HEAD
-=======
         var mainType = this.mainType;
         var isSeries = mainType === 'series';
->>>>>>> apache-master
 
         return {
             componentType: mainType,
@@ -23548,23 +23537,27 @@ chartProto.updateView
 
 /**
  * Set state of single element
- * @param  {module:zrender/Element} el
- * @param  {string} state
+ * @param {module:zrender/Element} el
+ * @param  {string} state 'normal'|'emphasis'
  */
 function elSetState(el, state) {
     if (el) {
         el.trigger(state);
-        if (el.type === 'group') {
-            for (var i = 0; i < el.childCount(); i++) {
+        if (el.isGroup
+            // Simple optimize.
+            && !isHighDownDispatcher(el)
+        ) {
+            for (var i = 0, len = el.childCount(); i < len; i++) {
                 elSetState(el.childAt(i), state);
             }
         }
     }
 }
+
 /**
- * @param  {module:echarts/data/List} data
- * @param  {Object} payload
- * @param  {string} state 'normal'|'emphasis'
+ * @param {module:echarts/data/List} data
+ * @param {Object} payload
+ * @param {string} state 'normal'|'emphasis'
  */
 function toggleHighlight(data, payload, state) {
     var dataIndex = queryDataIndex(data, payload);
@@ -25089,11 +25082,7 @@ function parseXML(svg) {
         var parser = new DOMParser();
         svg = parser.parseFromString(svg, 'text/xml');
     }
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> apache-master
     // Document node. If using $.get, doc node may be input.
     if (svg.nodeType === 9) {
         svg = svg.firstChild;
@@ -25102,37 +25091,20 @@ function parseXML(svg) {
     while (svg.nodeName.toLowerCase() !== 'svg' || svg.nodeType !== 1) {
         svg = svg.nextSibling;
     }
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> apache-master
     return svg;
 }
 
 function SVGParser() {
     this._defs = {};
     this._root = null;
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> apache-master
     this._isDefine = false;
     this._isText = false;
 }
 
 SVGParser.prototype.parse = function (xml, opt) {
     opt = opt || {};
-<<<<<<< HEAD
-    
-    var svg = parseXML(xml);
-    
-    if (!svg) {
-        throw new Error('Illegal svg');
-    }
-    
-=======
 
     var svg = parseXML(xml);
 
@@ -25140,16 +25112,11 @@ SVGParser.prototype.parse = function (xml, opt) {
         throw new Error('Illegal svg');
     }
 
->>>>>>> apache-master
     var root = new Group();
     this._root = root;
     // parse view port
     var viewBox = svg.getAttribute('viewBox') || '';
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> apache-master
     // If width/height not specified, means "100%" of `opt.width/height`.
     // TODO: Other percent value not supported yet.
     var width = parseFloat(svg.getAttribute('width') || opt.width);
@@ -25157,33 +25124,19 @@ SVGParser.prototype.parse = function (xml, opt) {
     // If width/height not specified, set as null for output.
     isNaN(width) && (width = null);
     isNaN(height) && (height = null);
-<<<<<<< HEAD
-    
-    // Apply inline style on svg element.
-    parseAttributes(svg, root, null, true);
-    
-=======
 
     // Apply inline style on svg element.
     parseAttributes(svg, root, null, true);
 
->>>>>>> apache-master
     var child = svg.firstChild;
     while (child) {
         this._parseNode(child, root);
         child = child.nextSibling;
     }
-<<<<<<< HEAD
-    
-    var viewBoxRect;
-    var viewBoxTransform;
-    
-=======
 
     var viewBoxRect;
     var viewBoxTransform;
 
->>>>>>> apache-master
     if (viewBox) {
         var viewBoxArr = trim(viewBox).split(DILIMITER_REG);
         // Some invalid case like viewBox: 'none'.
@@ -25196,17 +25149,10 @@ SVGParser.prototype.parse = function (xml, opt) {
             };
         }
     }
-<<<<<<< HEAD
-    
-    if (viewBoxRect && width != null && height != null) {
-        viewBoxTransform = makeViewBoxTransform(viewBoxRect, width, height);
-        
-=======
 
     if (viewBoxRect && width != null && height != null) {
         viewBoxTransform = makeViewBoxTransform(viewBoxRect, width, height);
 
->>>>>>> apache-master
         if (!opt.ignoreViewBox) {
             // If set transform on the output group, it probably bring trouble when
             // some users only intend to show the clipped content inside the viewBox,
@@ -25221,11 +25167,7 @@ SVGParser.prototype.parse = function (xml, opt) {
             elRoot.position = viewBoxTransform.position.slice();
         }
     }
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> apache-master
     // Some shapes might be overflow the viewport, which should be
     // clipped despite whether the viewBox is used, as the SVG does.
     if (!opt.ignoreRootClip && width != null && height != null) {
@@ -25233,11 +25175,7 @@ SVGParser.prototype.parse = function (xml, opt) {
             shape: {x: 0, y: 0, width: width, height: height}
         }));
     }
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> apache-master
     // Set width/height on group just for output the viewport size.
     return {
         root: root,
@@ -25249,15 +25187,6 @@ SVGParser.prototype.parse = function (xml, opt) {
 };
 
 SVGParser.prototype._parseNode = function (xmlNode, parentGroup) {
-<<<<<<< HEAD
-    
-    var nodeName = xmlNode.nodeName.toLowerCase();
-    
-    // TODO
-    // support <style>...</style> in svg, where nodeName is 'style',
-    // CSS classes is defined globally wherever the style tags are declared.
-    
-=======
 
     var nodeName = xmlNode.nodeName.toLowerCase();
 
@@ -25265,7 +25194,6 @@ SVGParser.prototype._parseNode = function (xmlNode, parentGroup) {
     // support <style>...</style> in svg, where nodeName is 'style',
     // CSS classes is defined globally wherever the style tags are declared.
 
->>>>>>> apache-master
     if (nodeName === 'defs') {
         // define flag
         this._isDefine = true;
@@ -25273,11 +25201,7 @@ SVGParser.prototype._parseNode = function (xmlNode, parentGroup) {
     else if (nodeName === 'text') {
         this._isText = true;
     }
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> apache-master
     var el;
     if (this._isDefine) {
         var parser = defineParsers[nodeName];
@@ -25296,11 +25220,7 @@ SVGParser.prototype._parseNode = function (xmlNode, parentGroup) {
             parentGroup.add(el);
         }
     }
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> apache-master
     var child = xmlNode.firstChild;
     while (child) {
         if (child.nodeType === 1) {
@@ -25312,11 +25232,7 @@ SVGParser.prototype._parseNode = function (xmlNode, parentGroup) {
         }
         child = child.nextSibling;
     }
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> apache-master
     // Quit define
     if (nodeName === 'defs') {
         this._isDefine = false;
@@ -25333,11 +25249,7 @@ SVGParser.prototype._parseText = function (xmlNode, parentGroup) {
         this._textX += parseFloat(dx);
         this._textY += parseFloat(dy);
     }
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> apache-master
     var text = new Text({
         style: {
             text: xmlNode.textContent,
@@ -25345,17 +25257,10 @@ SVGParser.prototype._parseText = function (xmlNode, parentGroup) {
         },
         position: [this._textX || 0, this._textY || 0]
     });
-<<<<<<< HEAD
-    
-    inheritStyle(parentGroup, text);
-    parseAttributes(xmlNode, text, this._defs);
-    
-=======
 
     inheritStyle(parentGroup, text);
     parseAttributes(xmlNode, text, this._defs);
 
->>>>>>> apache-master
     var fontSize = text.style.fontSize;
     if (fontSize && fontSize < 9) {
         // PENDING
@@ -25364,39 +25269,16 @@ SVGParser.prototype._parseText = function (xmlNode, parentGroup) {
         text.scale[0] *= fontSize / 9;
         text.scale[1] *= fontSize / 9;
     }
-<<<<<<< HEAD
-    
-    var rect = text.getBoundingRect();
-    this._textX += rect.width;
-    
-    parentGroup.add(text);
-    
-=======
 
     var rect = text.getBoundingRect();
     this._textX += rect.width;
 
     parentGroup.add(text);
 
->>>>>>> apache-master
     return text;
 };
 
 var nodeParsers = {
-<<<<<<< HEAD
-    'g': function(xmlNode, parentGroup) {
-        var g = new Group();
-        inheritStyle(parentGroup, g);
-        parseAttributes(xmlNode, g, this._defs);
-        
-        return g;
-    },
-    'rect': function(xmlNode, parentGroup) {
-        var rect = new Rect();
-        inheritStyle(parentGroup, rect);
-        parseAttributes(xmlNode, rect, this._defs);
-        
-=======
     'g': function (xmlNode, parentGroup) {
         var g = new Group();
         inheritStyle(parentGroup, g);
@@ -25409,26 +25291,12 @@ var nodeParsers = {
         inheritStyle(parentGroup, rect);
         parseAttributes(xmlNode, rect, this._defs);
 
->>>>>>> apache-master
         rect.setShape({
             x: parseFloat(xmlNode.getAttribute('x') || 0),
             y: parseFloat(xmlNode.getAttribute('y') || 0),
             width: parseFloat(xmlNode.getAttribute('width') || 0),
             height: parseFloat(xmlNode.getAttribute('height') || 0)
         });
-<<<<<<< HEAD
-        
-        // console.log(xmlNode.getAttribute('transform'));
-        // console.log(rect.transform);
-        
-        return rect;
-    },
-    'circle': function(xmlNode, parentGroup) {
-        var circle = new Circle();
-        inheritStyle(parentGroup, circle);
-        parseAttributes(xmlNode, circle, this._defs);
-        
-=======
 
         // console.log(xmlNode.getAttribute('transform'));
         // console.log(rect.transform);
@@ -25440,22 +25308,11 @@ var nodeParsers = {
         inheritStyle(parentGroup, circle);
         parseAttributes(xmlNode, circle, this._defs);
 
->>>>>>> apache-master
         circle.setShape({
             cx: parseFloat(xmlNode.getAttribute('cx') || 0),
             cy: parseFloat(xmlNode.getAttribute('cy') || 0),
             r: parseFloat(xmlNode.getAttribute('r') || 0)
         });
-<<<<<<< HEAD
-        
-        return circle;
-    },
-    'line': function(xmlNode, parentGroup) {
-        var line = new Line();
-        inheritStyle(parentGroup, line);
-        parseAttributes(xmlNode, line, this._defs);
-        
-=======
 
         return circle;
     },
@@ -25464,23 +25321,12 @@ var nodeParsers = {
         inheritStyle(parentGroup, line);
         parseAttributes(xmlNode, line, this._defs);
 
->>>>>>> apache-master
         line.setShape({
             x1: parseFloat(xmlNode.getAttribute('x1') || 0),
             y1: parseFloat(xmlNode.getAttribute('y1') || 0),
             x2: parseFloat(xmlNode.getAttribute('x2') || 0),
             y2: parseFloat(xmlNode.getAttribute('y2') || 0)
         });
-<<<<<<< HEAD
-        
-        return line;
-    },
-    'ellipse': function(xmlNode, parentGroup) {
-        var ellipse = new Ellipse();
-        inheritStyle(parentGroup, ellipse);
-        parseAttributes(xmlNode, ellipse, this._defs);
-        
-=======
 
         return line;
     },
@@ -25489,7 +25335,6 @@ var nodeParsers = {
         inheritStyle(parentGroup, ellipse);
         parseAttributes(xmlNode, ellipse, this._defs);
 
->>>>>>> apache-master
         ellipse.setShape({
             cx: parseFloat(xmlNode.getAttribute('cx') || 0),
             cy: parseFloat(xmlNode.getAttribute('cy') || 0),
@@ -25498,11 +25343,7 @@ var nodeParsers = {
         });
         return ellipse;
     },
-<<<<<<< HEAD
-    'polygon': function(xmlNode, parentGroup) {
-=======
     'polygon': function (xmlNode, parentGroup) {
->>>>>>> apache-master
         var points = xmlNode.getAttribute('points');
         if (points) {
             points = parsePoints(points);
@@ -25512,19 +25353,6 @@ var nodeParsers = {
                 points: points || []
             }
         });
-<<<<<<< HEAD
-        
-        inheritStyle(parentGroup, polygon);
-        parseAttributes(xmlNode, polygon, this._defs);
-        
-        return polygon;
-    },
-    'polyline': function(xmlNode, parentGroup) {
-        var path = new Path();
-        inheritStyle(parentGroup, path);
-        parseAttributes(xmlNode, path, this._defs);
-        
-=======
 
         inheritStyle(parentGroup, polygon);
         parseAttributes(xmlNode, polygon, this._defs);
@@ -25536,7 +25364,6 @@ var nodeParsers = {
         inheritStyle(parentGroup, path);
         parseAttributes(xmlNode, path, this._defs);
 
->>>>>>> apache-master
         var points = xmlNode.getAttribute('points');
         if (points) {
             points = parsePoints(points);
@@ -25546,16 +25373,6 @@ var nodeParsers = {
                 points: points || []
             }
         });
-<<<<<<< HEAD
-        
-        return polyline;
-    },
-    'image': function(xmlNode, parentGroup) {
-        var img = new ZImage();
-        inheritStyle(parentGroup, img);
-        parseAttributes(xmlNode, img, this._defs);
-        
-=======
 
         return polyline;
     },
@@ -25564,7 +25381,6 @@ var nodeParsers = {
         inheritStyle(parentGroup, img);
         parseAttributes(xmlNode, img, this._defs);
 
->>>>>>> apache-master
         img.setStyle({
             image: xmlNode.getAttribute('xlink:href'),
             x: xmlNode.getAttribute('x'),
@@ -25572,31 +25388,14 @@ var nodeParsers = {
             width: xmlNode.getAttribute('width'),
             height: xmlNode.getAttribute('height')
         });
-<<<<<<< HEAD
-        
-        return img;
-    },
-    'text': function(xmlNode, parentGroup) {
-=======
 
         return img;
     },
     'text': function (xmlNode, parentGroup) {
->>>>>>> apache-master
         var x = xmlNode.getAttribute('x') || 0;
         var y = xmlNode.getAttribute('y') || 0;
         var dx = xmlNode.getAttribute('dx') || 0;
         var dy = xmlNode.getAttribute('dy') || 0;
-<<<<<<< HEAD
-        
-        this._textX = parseFloat(x) + parseFloat(dx);
-        this._textY = parseFloat(y) + parseFloat(dy);
-        
-        var g = new Group();
-        inheritStyle(parentGroup, g);
-        parseAttributes(xmlNode, g, this._defs);
-        
-=======
 
         this._textX = parseFloat(x) + parseFloat(dx);
         this._textY = parseFloat(y) + parseFloat(dy);
@@ -25605,7 +25404,6 @@ var nodeParsers = {
         inheritStyle(parentGroup, g);
         parseAttributes(xmlNode, g, this._defs);
 
->>>>>>> apache-master
         return g;
     },
     'tspan': function (xmlNode, parentGroup) {
@@ -25621,21 +25419,6 @@ var nodeParsers = {
         }
         var dx = xmlNode.getAttribute('dx') || 0;
         var dy = xmlNode.getAttribute('dy') || 0;
-<<<<<<< HEAD
-        
-        var g = new Group();
-        
-        inheritStyle(parentGroup, g);
-        parseAttributes(xmlNode, g, this._defs);
-        
-        
-        this._textX += dx;
-        this._textY += dy;
-        
-        return g;
-    },
-    'path': function(xmlNode, parentGroup) {
-=======
 
         var g = new Group();
 
@@ -25649,21 +25432,10 @@ var nodeParsers = {
         return g;
     },
     'path': function (xmlNode, parentGroup) {
->>>>>>> apache-master
         // TODO svg fill rule
         // https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fill-rule
         // path.style.globalCompositeOperation = 'xor';
         var d = xmlNode.getAttribute('d') || '';
-<<<<<<< HEAD
-        
-        // Performance sensitive.
-        
-        var path = createFromString(d);
-        
-        inheritStyle(parentGroup, path);
-        parseAttributes(xmlNode, path, this._defs);
-        
-=======
 
         // Performance sensitive.
 
@@ -25672,30 +25444,11 @@ var nodeParsers = {
         inheritStyle(parentGroup, path);
         parseAttributes(xmlNode, path, this._defs);
 
->>>>>>> apache-master
         return path;
     }
 };
 
 var defineParsers = {
-<<<<<<< HEAD
-    
-    'lineargradient': function(xmlNode) {
-        var x1 = parseInt(xmlNode.getAttribute('x1') || 0);
-        var y1 = parseInt(xmlNode.getAttribute('y1') || 0);
-        var x2 = parseInt(xmlNode.getAttribute('x2') || 10);
-        var y2 = parseInt(xmlNode.getAttribute('y2') || 0);
-        
-        var gradient = new LinearGradient(x1, y1, x2, y2);
-        
-        _parseGradientColorStops(xmlNode, gradient);
-        
-        return gradient;
-    },
-    
-    'radialgradient': function(xmlNode) {
-    
-=======
 
     'lineargradient': function (xmlNode) {
         var x1 = parseInt(xmlNode.getAttribute('x1') || 0, 10);
@@ -25712,47 +25465,28 @@ var defineParsers = {
 
     'radialgradient': function (xmlNode) {
 
->>>>>>> apache-master
     }
 };
 
 function _parseGradientColorStops(xmlNode, gradient) {
-<<<<<<< HEAD
-    
-    var stop = xmlNode.firstChild;
-    
-=======
 
     var stop = xmlNode.firstChild;
 
->>>>>>> apache-master
     while (stop) {
         if (stop.nodeType === 1) {
             var offset = stop.getAttribute('offset');
             if (offset.indexOf('%') > 0) {  // percentage
-<<<<<<< HEAD
-                offset = parseInt(offset) / 100;
-            }
-            else if(offset) {    // number from 0 to 1
-=======
                 offset = parseInt(offset, 10) / 100;
             }
             else if (offset) {    // number from 0 to 1
->>>>>>> apache-master
                 offset = parseFloat(offset);
             }
             else {
                 offset = 0;
             }
-<<<<<<< HEAD
-            
-            var stopColor = stop.getAttribute('stop-color') || '#000000';
-            
-=======
 
             var stopColor = stop.getAttribute('stop-color') || '#000000';
 
->>>>>>> apache-master
             gradient.addColorStop(offset, stopColor);
         }
         stop = stop.nextSibling;
@@ -25771,17 +25505,10 @@ function inheritStyle(parent, child) {
 function parsePoints(pointsString) {
     var list = trim(pointsString).split(DILIMITER_REG);
     var points = [];
-<<<<<<< HEAD
-    
-    for (var i = 0; i < list.length; i+=2) {
-        var x = parseFloat(list[i]);
-        var y = parseFloat(list[i+1]);
-=======
 
     for (var i = 0; i < list.length; i += 2) {
         var x = parseFloat(list[i]);
         var y = parseFloat(list[i + 1]);
->>>>>>> apache-master
         points.push([x, y]);
     }
     return points;
@@ -25803,11 +25530,7 @@ var attributesMap = {
     'font-size': 'fontSize',
     'font-style': 'fontStyle',
     'font-weight': 'fontWeight',
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> apache-master
     'text-align': 'textAlign',
     'alignment-baseline': 'textBaseline'
 };
@@ -25815,15 +25538,6 @@ var attributesMap = {
 function parseAttributes(xmlNode, el, defs, onlyInlineStyle) {
     var zrStyle = el.__inheritedStyle || {};
     var isTextEl = el.type === 'text';
-<<<<<<< HEAD
-    
-    // TODO Shadow
-    if (xmlNode.nodeType === 1) {
-        parseTransformAttribute(xmlNode, el);
-        
-        extend(zrStyle, parseStyleAttribute(xmlNode));
-        
-=======
 
     // TODO Shadow
     if (xmlNode.nodeType === 1) {
@@ -25831,7 +25545,6 @@ function parseAttributes(xmlNode, el, defs, onlyInlineStyle) {
 
         extend(zrStyle, parseStyleAttribute(xmlNode));
 
->>>>>>> apache-master
         if (!onlyInlineStyle) {
             for (var svgAttrName in attributesMap) {
                 if (attributesMap.hasOwnProperty(svgAttrName)) {
@@ -25843,18 +25556,6 @@ function parseAttributes(xmlNode, el, defs, onlyInlineStyle) {
             }
         }
     }
-<<<<<<< HEAD
-    
-    var elFillProp = isTextEl ? 'textFill' : 'fill';
-    var elStrokeProp = isTextEl ? 'textStroke' : 'stroke';
-    
-    el.style = el.style || new Style();
-    var elStyle = el.style;
-    
-    zrStyle.fill != null && elStyle.set(elFillProp, getPaint(zrStyle.fill, defs));
-    zrStyle.stroke != null && elStyle.set(elStrokeProp, getPaint(zrStyle.stroke, defs));
-    
-=======
 
     var elFillProp = isTextEl ? 'textFill' : 'fill';
     var elStrokeProp = isTextEl ? 'textStroke' : 'stroke';
@@ -25865,18 +25566,13 @@ function parseAttributes(xmlNode, el, defs, onlyInlineStyle) {
     zrStyle.fill != null && elStyle.set(elFillProp, getPaint(zrStyle.fill, defs));
     zrStyle.stroke != null && elStyle.set(elStrokeProp, getPaint(zrStyle.stroke, defs));
 
->>>>>>> apache-master
     each$1([
         'lineWidth', 'opacity', 'fillOpacity', 'strokeOpacity', 'miterLimit', 'fontSize'
     ], function (propName) {
         var elPropName = (propName === 'lineWidth' && isTextEl) ? 'textStrokeWidth' : propName;
         zrStyle[propName] != null && elStyle.set(elPropName, parseFloat(zrStyle[propName]));
     });
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> apache-master
     if (!zrStyle.textBaseline || zrStyle.textBaseline === 'auto') {
         zrStyle.textBaseline = 'alphabetic';
     }
@@ -25889,19 +25585,6 @@ function parseAttributes(xmlNode, el, defs, onlyInlineStyle) {
     if (zrStyle.textAlign === 'end') {
         zrStyle.textAlign = 'right';
     }
-<<<<<<< HEAD
-    
-    each$1(['lineDashOffset', 'lineCap', 'lineJoin',
-          'fontWeight', 'fontFamily', 'fontStyle', 'textAlign', 'textBaseline'
-    ], function (propName) {
-        zrStyle[propName] != null && elStyle.set(propName, zrStyle[propName]);
-    });
-    
-    if (zrStyle.lineDash) {
-        el.style.lineDash = trim(zrStyle.lineDash).split(DILIMITER_REG);
-    }
-    
-=======
 
     each$1(['lineDashOffset', 'lineCap', 'lineJoin',
         'fontWeight', 'fontFamily', 'fontStyle', 'textAlign', 'textBaseline'
@@ -25913,16 +25596,11 @@ function parseAttributes(xmlNode, el, defs, onlyInlineStyle) {
         el.style.lineDash = trim(zrStyle.lineDash).split(DILIMITER_REG);
     }
 
->>>>>>> apache-master
     if (elStyle[elStrokeProp] && elStyle[elStrokeProp] !== 'none') {
         // enable stroke
         el[elStrokeProp] = true;
     }
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> apache-master
     el.__inheritedStyle = zrStyle;
 }
 
@@ -25949,16 +25627,6 @@ function parseTransformAttribute(xmlNode, node) {
         transform = transform.replace(/,/g, ' ');
         var m = null;
         var transformOps = [];
-<<<<<<< HEAD
-        transform.replace(transformRegex, function(str, type, value) {
-            transformOps.push(type, value);
-        });
-        for(var i = transformOps.length - 1; i > 0; i-=2) {
-            var value = transformOps[i];
-            var type = transformOps[i-1];
-            m = m || create$1();
-            switch(type) {
-=======
         transform.replace(transformRegex, function (str, type, value) {
             transformOps.push(type, value);
         });
@@ -25967,7 +25635,6 @@ function parseTransformAttribute(xmlNode, node) {
             var type = transformOps[i - 1];
             m = m || create$1();
             switch (type) {
->>>>>>> apache-master
                 case 'translate':
                     value = trim(value).split(DILIMITER_REG);
                     translate(m, m, [parseFloat(value[0]), parseFloat(value[1] || 0)]);
@@ -25997,11 +25664,7 @@ function parseTransformAttribute(xmlNode, node) {
         }
     }
     node.setLocalTransform(m);
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> apache-master
 }
 
 // Value may contain space.
@@ -26009,40 +25672,24 @@ var styleRegex = /([^\s:;]+)\s*:\s*([^:;]+)/g;
 function parseStyleAttribute(xmlNode) {
     var style = xmlNode.getAttribute('style');
     var result = {};
-<<<<<<< HEAD
-    
-    if (!style) {
-        return result;
-    }
-    
-=======
 
     if (!style) {
         return result;
     }
 
->>>>>>> apache-master
     var styleList = {};
     styleRegex.lastIndex = 0;
     var styleRegResult;
     while ((styleRegResult = styleRegex.exec(style)) != null) {
         styleList[styleRegResult[1]] = styleRegResult[2];
     }
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> apache-master
     for (var svgAttrName in attributesMap) {
         if (attributesMap.hasOwnProperty(svgAttrName) && styleList[svgAttrName] != null) {
             result[attributesMap[svgAttrName]] = styleList[svgAttrName];
         }
     }
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> apache-master
     return result;
 }
 
@@ -26062,11 +25709,7 @@ function makeViewBoxTransform(viewBoxRect, width, height) {
         -(viewBoxRect.x + viewBoxRect.width / 2) * scale + width / 2,
         -(viewBoxRect.y + viewBoxRect.height / 2) * scale + height / 2
     ];
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> apache-master
     return {
         scale: viewBoxScale,
         position: viewBoxPosition
@@ -26226,6 +25869,7 @@ var PRIORITY_PROCESSOR_FILTER = 1000;
 var PRIORITY_PROCESSOR_STATISTIC = 5000;
 
 var PRIORITY_VISUAL_LAYOUT = 1000;
+var PRIORITY_VISUAL_PROGRESSIVE_LAYOUT = 1100;
 var PRIORITY_VISUAL_GLOBAL = 2000;
 var PRIORITY_VISUAL_CHART = 3000;
 var PRIORITY_VISUAL_COMPONENT = 4000;
@@ -26240,6 +25884,7 @@ var PRIORITY = {
     },
     VISUAL: {
         LAYOUT: PRIORITY_VISUAL_LAYOUT,
+        PROGRESSIVE_LAYOUT: PRIORITY_VISUAL_PROGRESSIVE_LAYOUT,
         GLOBAL: PRIORITY_VISUAL_GLOBAL,
         CHART: PRIORITY_VISUAL_CHART,
         COMPONENT: PRIORITY_VISUAL_COMPONENT,
@@ -26385,11 +26030,7 @@ function ECharts(dom, theme$$1, opts) {
      */
     this._scheduler = new Scheduler(this, api, dataProcessorFuncs, visualFuncs);
 
-<<<<<<< HEAD
-    Eventful.call(this, this._ecEventProcessor = makeEventProcessor(this));
-=======
     Eventful.call(this, this._ecEventProcessor = new EventProcessor());
->>>>>>> apache-master
 
     /**
      * @type {module:echarts~MessageCenter}
@@ -27702,9 +27343,6 @@ echartsProto._initEvents = function () {
 
             if (params) {
                 var componentType = params.componentType;
-<<<<<<< HEAD
-                var componentIndex = params[componentType + 'Index'];
-=======
                 var componentIndex = params.componentIndex;
                 // Special handling for historic reason: when trigger by
                 // markLine/markPoint/markArea, the componentType is
@@ -27718,7 +27356,6 @@ echartsProto._initEvents = function () {
                     componentType = 'series';
                     componentIndex = params.seriesIndex;
                 }
->>>>>>> apache-master
                 var model = componentType && componentIndex != null
                     && ecModel.getComponent(componentType, componentIndex);
                 var view = model && this[
@@ -27729,32 +27366,20 @@ echartsProto._initEvents = function () {
                     // `event.componentType` and `event[componentTpype + 'Index']` must not
                     // be missed, otherwise there is no way to distinguish source component.
                     // See `dataFormat.getDataParams`.
-<<<<<<< HEAD
-                    assert$1(isGlobalOut || (model && view));
-=======
                     if (!isGlobalOut && !(model && view)) {
                         console.warn('model or view can not be found by params');
                     }
->>>>>>> apache-master
                 }
 
                 params.event = e;
                 params.type = eveName;
 
-<<<<<<< HEAD
-                var ecEventProcessor = this._ecEventProcessor;
-                ecEventProcessor.targetEl = el;
-                ecEventProcessor.packedEvent = params;
-                ecEventProcessor.model = model;
-                ecEventProcessor.view = view;
-=======
                 this._ecEventProcessor.eventInfo = {
                     targetEl: el,
                     packedEvent: params,
                     model: model,
                     view: view
                 };
->>>>>>> apache-master
 
                 this.trigger(eveName, params);
             }
@@ -28016,108 +27641,6 @@ EventProcessor.prototype = {
     }
 };
 
-
-/**
- * Usage of query:
- * `chart.on('click', query, handler);`
- * The `query` can be:
- * + The component type query string, only `mainType` or `mainType.subType`,
- *   like: 'xAxis', 'series', 'xAxis.category' or 'series.line'.
- * + The component query object, like:
- *   `{seriesIndex: 2}`, `{seriesName: 'xx'}`, `{seriesId: 'some'}`,
- *   `{xAxisIndex: 2}`, `{xAxisName: 'xx'}`, `{xAxisId: 'some'}`.
- * + The element query object, like:
- *   `{targetName: 'some'}` (only available in custom series).
- *
- * Caveat: If a prop in the `query` object is `null/undefined`, it is the
- * same as there is no such prop in the `query` object.
- */
-function makeEventProcessor(ecIns) {
-    return {
-
-        normalizeQuery: function (query) {
-            var cptQuery = {};
-            var dataQuery = {};
-            var otherQuery = {};
-
-            // `query` is `mainType` or `mainType.subType` of component.
-            if (isString(query)) {
-                var condCptType = parseClassType(query);
-                // `.main` and `.sub` may be ''.
-                cptQuery.mainType = condCptType.main || null;
-                cptQuery.subType = condCptType.sub || null;
-            }
-            // `query` is an object, convert to {mainType, index, name, id}.
-            else {
-                // `xxxIndex`, `xxxName`, `xxxId`, `name`, `dataIndex`, `dataType` is reserved,
-                // can not be used in `compomentModel.filterForExposedEvent`.
-                var suffixes = ['Index', 'Name', 'Id'];
-                var dataKeys = {name: 1, dataIndex: 1, dataType: 1};
-                each$1(query, function (val, key) {
-                    var reserved;
-                    for (var i = 0; i < suffixes.length; i++) {
-                        var propSuffix = suffixes[i];
-                        var suffixPos = key.lastIndexOf(propSuffix);
-                        if (suffixPos > 0 && suffixPos === key.length - propSuffix.length) {
-                            var mainType = key.slice(0, suffixPos);
-                            // Consider `dataIndex`.
-                            if (mainType !== 'data') {
-                                cptQuery.mainType = mainType;
-                                cptQuery[propSuffix.toLowerCase()] = val;
-                                reserved = true;
-                            }
-                        }
-                    }
-                    if (dataKeys.hasOwnProperty(key)) {
-                        dataQuery[key] = val;
-                        reserved = true;
-                    }
-                    if (!reserved) {
-                        otherQuery[key] = val;
-                    }
-                });
-            }
-
-            return {
-                cptQuery: cptQuery,
-                dataQuery: dataQuery,
-                otherQuery: otherQuery
-            };
-        },
-
-        filter: function (eventType, query, args) {
-            // They should be assigned before each trigger call.
-            var targetEl = this.targetEl;
-            var packedEvent = this.packedEvent;
-            var model = this.model;
-            var view = this.view;
-
-            // For event like 'globalout'.
-            if (!model || !view) {
-                return true;
-            }
-
-            var cptQuery = query.cptQuery;
-            var dataQuery = query.dataQuery;
-
-            return check(cptQuery, model, 'mainType')
-                && check(cptQuery, model, 'subType')
-                && check(cptQuery, model, 'index', 'componentIndex')
-                && check(cptQuery, model, 'name')
-                && check(cptQuery, model, 'id')
-                && check(dataQuery, packedEvent, 'name')
-                && check(dataQuery, packedEvent, 'dataIndex')
-                && check(dataQuery, packedEvent, 'dataType')
-                && (!view.filterForExposedEvent || view.filterForExposedEvent(
-                    eventType, query.otherQuery, targetEl, packedEvent
-                ));
-        }
-    };
-
-    function check(query, host, prop, propOnHost) {
-        return query[prop] == null || host[propOnHost || prop] === query[prop];
-    }
-}
 
 /**
  * @type {Object} key: actionType.
@@ -32092,7 +31615,7 @@ symbolProto.setZ = function (zlevel, z) {
 symbolProto.setDraggable = function (draggable) {
     var symbolPath = this.childAt(0);
     symbolPath.draggable = draggable;
-    symbolPath.cursor = draggable ? 'move' : 'pointer';
+    symbolPath.cursor = draggable ? 'move' : symbolPath.cursor;
 };
 
 /**
@@ -32257,15 +31780,13 @@ symbolProto._updateCommon = function (data, idx, symbolSize, seriesScope) {
         return useNameLabel ? data.getName(idx) : getDefaultLabel(data, idx);
     }
 
-
+    removeExtraHighDownEffect(symbolPath);
 
     symbolPath.hoverStyle = hoverItemStyle;
 
     // FIXME
     // Do not use symbol.trigger('emphasis'), but use symbol.highlight() instead.
     setHoverStyle(symbolPath);
-
-<<<<<<< HEAD
     symbolPath.off('mouseover')
     .off('mouseout')
     .off('emphasis')
@@ -32274,42 +31795,14 @@ symbolProto._updateCommon = function (data, idx, symbolSize, seriesScope) {
     symbolPath.__symbolOriginalScale = getScale(symbolSize);
 
     if (hoverAnimation && seriesModel.isAnimationEnabled()) {
-        symbolPath.on('mouseover', onEmphasis)
-            .on('mouseout', onNormal)
-=======
-    symbolPath.__symbolOriginalScale = getScale(symbolSize);
-
-    if (hoverAnimation && seriesModel.isAnimationEnabled()) {
-        // Note: consider `off`, should use static function here.
-        symbolPath.on('mouseover', onMouseOver)
-            .on('mouseout', onMouseOut)
->>>>>>> apache-master
-            .on('emphasis', onEmphasis)
-            .on('normal', onNormal);
+        setExtraHighDownEffect(symbolPath, onEmphasis, onNormal);
     }
 };
-
-<<<<<<< HEAD
-function onEmphasis() {
-    // Do not support this hover animation util some scenario required.
-    // Animation can only be supported in hover layer when using `el.incremetal`.
-    if (this.incremental || this.useHoverLayer || isInEmphasis(this)) {
-=======
-function onMouseOver() {
-    // see comment in `graphic.isInEmphasis`
-    !isInEmphasis(this) && onEmphasis.call(this);
-}
-
-function onMouseOut() {
-    // see comment in `graphic.isInEmphasis`
-    !isInEmphasis(this) && onNormal.call(this);
-}
 
 function onEmphasis() {
     // Do not support this hover animation util some scenario required.
     // Animation can only be supported in hover layer when using `el.incremetal`.
     if (this.incremental || this.useHoverLayer) {
->>>>>>> apache-master
         return;
     }
     var scale = this.__symbolOriginalScale;
@@ -32323,11 +31816,7 @@ function onEmphasis() {
 }
 
 function onNormal() {
-<<<<<<< HEAD
-    if (this.incremental || this.useHoverLayer || isInEmphasis(this)) {
-=======
     if (this.incremental || this.useHoverLayer) {
->>>>>>> apache-master
         return;
     }
     this.animateTo({
@@ -40505,9 +39994,10 @@ function setLargeStyle(el, seriesModel, data) {
 */
 
 // In case developer forget to include grid component
-registerLayout(curry(layout, 'bar'));
-// Should after normal bar layout, otherwise it is blocked by normal bar layout.
-registerLayout(largeLayout);
+registerLayout(PRIORITY.VISUAL.LAYOUT, curry(layout, 'bar'));
+// Use higher prority to avoid to be blocked by other overall layout, which do not
+// only exist in this module, but probably also exist in other modules, like `barPolar`.
+registerLayout(PRIORITY.VISUAL.PROGRESSIVE_LAYOUT, largeLayout);
 
 registerVisual({
     seriesType: 'bar',
@@ -41038,13 +40528,9 @@ piePieceProto.updateData = function (data, idx, firstCreate) {
             }
         }, 300, 'elasticOut');
     }
-    sector.off('mouseover').off('mouseout').off('emphasis').off('normal');
+    removeExtraHighDownEffect(sector);
     if (itemModel.get('hoverAnimation') && seriesModel.isAnimationEnabled()) {
-        sector
-            .on('mouseover', onEmphasis)
-            .on('mouseout', onNormal)
-            .on('emphasis', onEmphasis)
-            .on('normal', onNormal);
+        setExtraHighDownEffect(sector, onEmphasis, onNormal);
     }
 
     this._updateLabel(data, idx);
