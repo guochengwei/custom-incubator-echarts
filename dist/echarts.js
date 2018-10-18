@@ -47916,12 +47916,19 @@ Tree.prototype = {
      * @return {module:echarts/data/Tree~TreeNode}
      */
     getNodeListByName: function (name) {
-        return this.data._nameList.reduce((arr, item, idx) => {
+        var arr = [];
+        this.data._nameList.forEach(function (item, idx) {
+            if (name === item) {
+                arr.push(this._nodes[idx]);
+            }
+        }.bind(this));
+        return arr;
+        /*return this.data._nameList.reduce((arr, item, idx) => {
             if (name === item) {
                 arr.push(this._nodes[idx]);
             }
             return arr;
-        }, []);
+        }, []);*/
     },
 
     /**
@@ -48101,8 +48108,6 @@ SeriesModel.extend({
                 treeDepth = node.depth;
             }
         });
-        var zoomRadio = Object.keys(treeWidth).map(item => treeWidth[item] / 1000 + 1);
-        option.zoomRadio = zoomRadio;
         var expandAndCollapse = option.expandAndCollapse;
         var expandTreeDepth = (expandAndCollapse && option.initialTreeDepth >= 0)
                               ? option.initialTreeDepth : treeDepth;
@@ -48660,7 +48665,7 @@ extendChartView({
             var animationDurationUpdate = seriesModel.get('animationDurationUpdate');
             var frames = animationDurationUpdate / 1000 * 60;
 
-            setTimeout(() => {
+            setTimeout(function () {
 
                 var kx = seriesModel.layoutInfo.kx / (payload.depth + 2);
                 if (payload.depth === seriesModel.layoutInfo.depth) {
@@ -48669,7 +48674,7 @@ extendChartView({
                 var ky = seriesModel.layoutInfo.ky;
 
                 var zoom = seriesModel.coordinateSystem.getZoom();
-                var roamZoomRadio = seriesModel.get('seriesModel');
+                var roamZoomRadio = seriesModel.get('roamZoomRadio');
                 var roamZoom = [2 - ky / 15, 2 - ky / 20];
                 var _zoom = null;
                 if (payload.zoom && zoom < roamZoom[1]) {
@@ -48678,13 +48683,12 @@ extendChartView({
                 /*else if (payload.expand === false && zoom > 1) {
                     _zoom = 1 + (roamZoom[0] - zoom) / frames;
                 }*/
-
                 var el = seriesModel.getData().getItemGraphicEl(payload.dataIndex);
                 var oldCenter = this._viewCoordSys.getCenter();
                 var dx = (oldCenter[0] - el.position[0] - kx) / frames;
                 var dy = (oldCenter[1] - el.position[1]) / frames;
                 var count = 0;
-                var moveTo = () => {
+                var moveTo = function () {
                     updateViewOnPan(this._controllerHost, dx, dy);
                     api.dispatchAction({
                         seriesId: seriesModel.id,
@@ -48709,9 +48713,9 @@ extendChartView({
                         requestAnimationFrame(moveTo);
                     }
                     count++;
-                };
+                }.bind(this);
                 requestAnimationFrame(moveTo);
-            }, payload.expand ? animationDurationUpdate + 50 : 0);
+            }.bind(this), payload.expand ? animationDurationUpdate + 50 : 0);
         }
     },
 
@@ -49144,7 +49148,9 @@ registerAction({
         if (Array.isArray(node)) {
             node = node.length === 1
                    ? node[0]
-                   : node.find(item => data.getRawDataItem(item.dataIndex).key === payload.dataKey);
+                   : node.find(function (item) {
+                       return data.getRawDataItem(item.dataIndex).key === payload.dataKey;
+                });
         }
         if (!node) {
             payload = null;
@@ -49198,9 +49204,9 @@ registerAction({
             el && el.downplay();
             el && el.__edge && el.__edge.trigger('normal');
         });
-        nodeList.forEach(node => {
+        nodeList.forEach(function (node) {
             // data.getItemGraphicEl(node.dataIndex);
-            node.getAncestors(true).forEach(item => {
+            node.getAncestors(true).forEach(function (item) {
                 if (!item.isActive) {
                     // item.isActive = true;
                     var el = data.getItemGraphicEl(item.dataIndex);
@@ -79366,7 +79372,7 @@ TooltipRichContent.prototype = {
     },
 
     getOuterSize: function () {
-        const size = this.getSize();
+        var size = this.getSize();
         return {
             width: size[0],
             height: size[1]

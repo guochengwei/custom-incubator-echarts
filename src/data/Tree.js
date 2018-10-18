@@ -429,12 +429,19 @@ Tree.prototype = {
      * @return {module:echarts/data/Tree~TreeNode}
      */
     getNodeListByName: function (name) {
-        return this.data._nameList.reduce((arr, item, idx) => {
+        var arr = [];
+        this.data._nameList.forEach(function (item, idx) {
+            if (name === item) {
+                arr.push(this._nodes[idx]);
+            }
+        }.bind(this));
+        return arr;
+        /*return this.data._nameList.reduce((arr, item, idx) => {
             if (name === item) {
                 arr.push(this._nodes[idx]);
             }
             return arr;
-        }, []);
+        }, []);*/
     },
 
     /**

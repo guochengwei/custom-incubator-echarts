@@ -65,8 +65,6 @@ export default SeriesModel.extend({
                 treeDepth = node.depth;
             }
         });
-        var zoomRadio = Object.keys(treeWidth).map(item => treeWidth[item] / 1000 + 1);
-        option.zoomRadio = zoomRadio;
         var expandAndCollapse = option.expandAndCollapse;
         var expandTreeDepth = (expandAndCollapse && option.initialTreeDepth >= 0)
                               ? option.initialTreeDepth : treeDepth;

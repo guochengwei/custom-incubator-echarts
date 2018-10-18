@@ -40,7 +40,9 @@ echarts.registerAction({
         if (Array.isArray(node)) {
             node = node.length === 1
                    ? node[0]
-                   : node.find(item => data.getRawDataItem(item.dataIndex).key === payload.dataKey);
+                   : node.find(function (item) {
+                       return data.getRawDataItem(item.dataIndex).key === payload.dataKey;
+                });
         }
         if (!node) {
             payload = null;
@@ -94,9 +96,9 @@ echarts.registerAction({
             el && el.downplay();
             el && el.__edge && el.__edge.trigger('normal');
         });
-        nodeList.forEach(node => {
+        nodeList.forEach(function (node) {
             // data.getItemGraphicEl(node.dataIndex);
-            node.getAncestors(true).forEach(item => {
+            node.getAncestors(true).forEach(function (item) {
                 if (!item.isActive) {
                     // item.isActive = true;
                     var el = data.getItemGraphicEl(item.dataIndex);

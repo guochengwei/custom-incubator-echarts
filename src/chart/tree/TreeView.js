@@ -150,7 +150,7 @@ export default echarts.extendChartView({
             var animationDurationUpdate = seriesModel.get('animationDurationUpdate');
             var frames = animationDurationUpdate / 1000 * 60;
 
-            setTimeout(() => {
+            setTimeout(function () {
 
                 var kx = seriesModel.layoutInfo.kx / (payload.depth + 2);
                 if (payload.depth === seriesModel.layoutInfo.depth) {
@@ -159,7 +159,7 @@ export default echarts.extendChartView({
                 var ky = seriesModel.layoutInfo.ky;
 
                 var zoom = seriesModel.coordinateSystem.getZoom();
-                var roamZoomRadio = seriesModel.get('seriesModel');
+                var roamZoomRadio = seriesModel.get('roamZoomRadio');
                 var roamZoom = [2 - ky / 15, 2 - ky / 20];
                 var _zoom = null;
                 if (payload.zoom && zoom < roamZoom[1]) {
@@ -168,13 +168,12 @@ export default echarts.extendChartView({
                 /*else if (payload.expand === false && zoom > 1) {
                     _zoom = 1 + (roamZoom[0] - zoom) / frames;
                 }*/
-
                 var el = seriesModel.getData().getItemGraphicEl(payload.dataIndex);
                 var oldCenter = this._viewCoordSys.getCenter();
                 var dx = (oldCenter[0] - el.position[0] - kx) / frames;
                 var dy = (oldCenter[1] - el.position[1]) / frames;
                 var count = 0;
-                var moveTo = () => {
+                var moveTo = function () {
                     roamHelper.updateViewOnPan(this._controllerHost, dx, dy);
                     api.dispatchAction({
                         seriesId: seriesModel.id,
@@ -199,9 +198,9 @@ export default echarts.extendChartView({
                         requestAnimationFrame(moveTo);
                     }
                     count++;
-                };
+                }.bind(this);
                 requestAnimationFrame(moveTo);
-            }, payload.expand ? animationDurationUpdate + 50 : 0);
+            }.bind(this), payload.expand ? animationDurationUpdate + 50 : 0);
         }
     },
 
