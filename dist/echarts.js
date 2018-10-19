@@ -48664,10 +48664,12 @@ extendChartView({
         if (seriesModel.get('roamAfterExpandAndCollapse') && payload && payload.type === 'treeExpandAndCollapse') {
             var animationDurationUpdate = seriesModel.get('animationDurationUpdate');
             var frames = animationDurationUpdate / 1000 * 60;
-
             setTimeout(function () {
-
-                var kx = seriesModel.layoutInfo.kx / (payload.depth + 2);
+                var el = seriesModel.getData().getItemGraphicEl(payload.dataIndex);
+                if (!el) {
+                    return;
+                }
+                var kx = seriesModel.layoutInfo.kx / (payload.depth + 1);
                 if (payload.depth === seriesModel.layoutInfo.depth) {
                     kx = 0;
                 }
@@ -48675,30 +48677,28 @@ extendChartView({
 
                 var zoom = seriesModel.coordinateSystem.getZoom();
                 var roamZoomRadio = seriesModel.get('roamZoomRadio');
-                var roamZoom = [2 - ky / 15, 2 - ky / 20];
-                var _zoom = null;
+                var roamZoom = [2 - ky / 10, 2 - ky / 15];
+                var _zoom = 1;
                 if (payload.zoom && zoom < roamZoom[1]) {
                     _zoom = 1 + (roamZoom[1] * roamZoomRadio - zoom) / frames;
                 }
                 /*else if (payload.expand === false && zoom > 1) {
                     _zoom = 1 + (roamZoom[0] - zoom) / frames;
                 }*/
-                var el = seriesModel.getData().getItemGraphicEl(payload.dataIndex);
-                var oldCenter = this._viewCoordSys.getCenter();
-                var dx = (oldCenter[0] - el.position[0] - kx) / frames;
-                var dy = (oldCenter[1] - el.position[1]) / frames;
+
                 var count = 0;
                 var moveTo = function () {
-                    updateViewOnPan(this._controllerHost, dx, dy);
+                    var temp = seriesModel.get('center');
+                    var dx = (temp[0] - el.position[0] - kx) / (frames - count + 1);
+                    var dy = (temp[1] - el.position[1]) / (frames - count + 1);
+                    updateViewOnPan(this._controllerHost, dx * _zoom, dy * _zoom);
                     api.dispatchAction({
                         seriesId: seriesModel.id,
                         type: 'treeRoam',
-                        dx: dx,
-                        dy: dy
+                        dx: dx * _zoom,
+                        dy: dy * _zoom
                     });
-
                     if (_zoom) {
-                        var temp = seriesModel.get('center');
                         updateViewOnZoom(this._controllerHost, _zoom, temp[0], temp[1]);
                         api.dispatchAction({
                             seriesId: seriesModel.id,
@@ -48715,7 +48715,7 @@ extendChartView({
                     count++;
                 }.bind(this);
                 requestAnimationFrame(moveTo);
-            }.bind(this), payload.expand ? animationDurationUpdate + 50 : 0);
+            }.bind(this), payload.expand ? animationDurationUpdate + 100 : 0);
         }
     },
 
@@ -48777,16 +48777,15 @@ extendChartView({
         .off('pan')
         .off('zoom')
         .on('pan', function (e) {
-            updateViewOnPan(controllerHost, e.dx, e.dy);
             api.dispatchAction({
                 seriesId: seriesModel.id,
                 type: 'treeRoam',
                 dx: e.dx,
                 dy: e.dy
             });
+            updateViewOnPan(controllerHost, e.dx, e.dy);
         }, this)
         .on('zoom', function (e) {
-            updateViewOnZoom(controllerHost, e.scale, e.originX, e.originY);
             api.dispatchAction({
                 seriesId: seriesModel.id,
                 type: 'treeRoam',
@@ -48794,6 +48793,7 @@ extendChartView({
                 originX: e.originX,
                 originY: e.originY
             });
+            updateViewOnZoom(controllerHost, e.scale, e.originX, e.originY);
             this._updateNodeAndLinkScale(seriesModel);
         }, this);
     },
@@ -49158,10 +49158,10 @@ registerAction({
         }
         if (node.isExpand && node.isActive) {
             node.isExpand = false;
-            payload.expand = false;
+            payload.expand = true;
         }
         else {
-            if (node.children.length !== 0 && !node.isExpand) {
+            if (node.children.length !== 0) {
                 payload.expand = true;
             }
             node.isExpand = true;
@@ -49205,10 +49205,9 @@ registerAction({
             el && el.__edge && el.__edge.trigger('normal');
         });
         nodeList.forEach(function (node) {
-            // data.getItemGraphicEl(node.dataIndex);
             node.getAncestors(true).forEach(function (item) {
                 if (!item.isActive) {
-                    // item.isActive = true;
+                    item.isActive = true;
                     var el = data.getItemGraphicEl(item.dataIndex);
                     el && el.highlight();
                     el && el.__edge && el.__edge.trigger('emphasis');

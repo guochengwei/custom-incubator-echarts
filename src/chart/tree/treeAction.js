@@ -50,10 +50,10 @@ echarts.registerAction({
         }
         if (node.isExpand && node.isActive) {
             node.isExpand = false;
-            payload.expand = false;
+            payload.expand = true;
         }
         else {
-            if (node.children.length !== 0 && !node.isExpand) {
+            if (node.children.length !== 0) {
                 payload.expand = true;
             }
             node.isExpand = true;
@@ -97,10 +97,9 @@ echarts.registerAction({
             el && el.__edge && el.__edge.trigger('normal');
         });
         nodeList.forEach(function (node) {
-            // data.getItemGraphicEl(node.dataIndex);
             node.getAncestors(true).forEach(function (item) {
                 if (!item.isActive) {
-                    // item.isActive = true;
+                    item.isActive = true;
                     var el = data.getItemGraphicEl(item.dataIndex);
                     el && el.highlight();
                     el && el.__edge && el.__edge.trigger('emphasis');
