@@ -48689,8 +48689,8 @@ extendChartView({
                 var count = 0;
                 var moveTo = function () {
                     var temp = seriesModel.get('center') || [0, 0];
-                    var dx = (temp[0] - el.position[0] - kx) / (frames - count + 1);
-                    var dy = (temp[1] - el.position[1]) / (frames - count + 1);
+                    var dx = (temp[0] - el.position[0] - kx) / ((frames - count) / 3 + 1);
+                    var dy = (temp[1] - el.position[1]) / ((frames - count) / 3 + 1);
                     updateViewOnPan(this._controllerHost, dx * _zoom, dy * _zoom);
                     api.dispatchAction({
                         seriesId: seriesModel.id,
@@ -49214,10 +49214,20 @@ registerAction({
         var data = seriesModel.getData();
         var tree = data.tree;
         var dataKey = payload.dataKey;
-        var nodeList = tree.getNodeListByName(dataName);
-        if (dataKey) {
-            nodeList = nodeList.filter(function (item) {
-                return item.key === dataKey;
+        var nodeList = [];
+        if (dataName) {
+            nodeList = tree.getNodeListByName(dataName);
+            if (dataKey) {
+                nodeList = nodeList.filter(function (item) {
+                    return item.key === dataKey;
+                });
+            }
+        }
+        else if (dataKey) {
+            tree.root.eachNode(function (item) {
+                if (item.key === dataKey) {
+                    nodeList.push(item);
+                }
             });
         }
         nodeList.forEach(function (node) {
