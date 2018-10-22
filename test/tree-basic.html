@@ -52,9 +52,9 @@ under the License.
                     .done(function (data) {
 
                         echarts.util.each(data.children, function (datum, index) {
+                            datum.key='1-'+index
                             index % 2 === 0 && (datum.collapsed = true);
                         });
-                        data.children = data.children.concat(data.children[data.children.length-1])
                         chart.setOption({
 
                             tooltip: {
@@ -122,12 +122,21 @@ under the License.
                             event: 'treeSearchHighlight',
                             update: 'update'
                         })
-                        
+                        echarts.registerAction({
+                            type: 'treeDownplay',
+                            event: 'treeDownplay',
+                            update: 'update'
+                        })
+    
                         
                         chart.dispatchAction({
                             type: 'treeSearchHighlight',
                             seriesIndex: 0,
-                            dataName: 'axis'
+                            dataKey: '1-1'
+                        })
+                        chart.dispatchAction({
+                            type: 'treeDownplay',
+                            seriesIndex: 0
                         })
                         
                         /*setTimeout(function() {

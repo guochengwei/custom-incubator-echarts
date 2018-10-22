@@ -81,8 +81,8 @@ echarts.registerAction({
 });
 
 echarts.registerAction({
-    type: 'downplay',
-    event: 'downplay',
+    type: 'treeDownplay',
+    event: 'treeDownplay',
     update: 'update'
 }, function (payload, ecModel) {
     ecModel.eachComponent({mainType: 'series', subType: 'tree', query: payload}, function (seriesModel) {
@@ -108,6 +108,7 @@ echarts.registerAction({
         var tree = data.tree;
         var dataKey = payload.dataKey;
         var nodeList = [];
+
         if (dataName) {
             nodeList = tree.getNodeListByName(dataName);
             if (dataKey) {
@@ -117,9 +118,9 @@ echarts.registerAction({
             }
         }
         else if (dataKey) {
-            tree.root.eachNode(function (item) {
-                if (item.key === dataKey) {
-                    nodeList.push(item);
+            data.each(function (idx) {
+                if (data.getRawDataItem(idx).key === dataKey) {
+                    nodeList.push(tree.getNodeByDataIndex(idx));
                 }
             });
         }
