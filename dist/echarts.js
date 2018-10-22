@@ -48688,7 +48688,7 @@ extendChartView({
 
                 var count = 0;
                 var moveTo = function () {
-                    var temp = seriesModel.get('center');
+                    var temp = seriesModel.get('center') || [0, 0];
                     var dx = (temp[0] - el.position[0] - kx) / (frames - count + 1);
                     var dy = (temp[1] - el.position[1]) / (frames - count + 1);
                     updateViewOnPan(this._controllerHost, dx * _zoom, dy * _zoom);
@@ -48748,7 +48748,6 @@ extendChartView({
 
         viewCoordSys.setCenter(seriesModel.get('center'));
         viewCoordSys.setZoom(seriesModel.get('zoom'));
-
         // Here we use viewCoordSys just for computing the 'position' and 'scale' of the group
         this.group.attr({
             position: viewCoordSys.position,
@@ -49149,7 +49148,7 @@ registerAction({
             node = node.length === 1
                    ? node[0]
                    : node.find(function (item) {
-                       return data.getRawDataItem(item.dataIndex).key === payload.dataKey;
+                    return data.getRawDataItem(item.dataIndex).key === payload.dataKey;
                 });
         }
         if (!node) {
@@ -49189,6 +49188,23 @@ registerAction({
 });
 
 registerAction({
+    type: 'downplay',
+    event: 'downplay',
+    update: 'update'
+}, function (payload, ecModel) {
+    ecModel.eachComponent({mainType: 'series', subType: 'tree', query: payload}, function (seriesModel) {
+        var data = seriesModel.getData();
+        var tree = data.tree;
+        tree.root.eachNode(function (item) {
+            item.isActive = false;
+            var el = data.getItemGraphicEl(item.dataIndex);
+            el && el.downplay();
+            el && el.__edge && el.__edge.trigger('normal');
+        });
+    });
+});
+
+registerAction({
     type: 'treeSearchHighlight',
     event: 'treeSearchHighlight',
     update: 'update'
@@ -49197,13 +49213,13 @@ registerAction({
         var dataName = payload.dataName;
         var data = seriesModel.getData();
         var tree = data.tree;
+        var dataKey = payload.dataKey;
         var nodeList = tree.getNodeListByName(dataName);
-        tree.root.eachNode(function (item) {
-            item.isActive = false;
-            var el = data.getItemGraphicEl(item.dataIndex);
-            el && el.downplay();
-            el && el.__edge && el.__edge.trigger('normal');
-        });
+        if (dataKey) {
+            nodeList = nodeList.filter(function (item) {
+                return item.key === dataKey;
+            });
+        }
         nodeList.forEach(function (node) {
             node.getAncestors(true).forEach(function (item) {
                 if (!item.isActive) {

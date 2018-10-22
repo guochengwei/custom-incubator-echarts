@@ -173,7 +173,7 @@ export default echarts.extendChartView({
 
                 var count = 0;
                 var moveTo = function () {
-                    var temp = seriesModel.get('center');
+                    var temp = seriesModel.get('center') || [0, 0];
                     var dx = (temp[0] - el.position[0] - kx) / (frames - count + 1);
                     var dy = (temp[1] - el.position[1]) / (frames - count + 1);
                     roamHelper.updateViewOnPan(this._controllerHost, dx * _zoom, dy * _zoom);
@@ -233,7 +233,6 @@ export default echarts.extendChartView({
 
         viewCoordSys.setCenter(seriesModel.get('center'));
         viewCoordSys.setZoom(seriesModel.get('zoom'));
-
         // Here we use viewCoordSys just for computing the 'position' and 'scale' of the group
         this.group.attr({
             position: viewCoordSys.position,
