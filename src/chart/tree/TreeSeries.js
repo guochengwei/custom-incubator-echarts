@@ -145,7 +145,7 @@ export default SeriesModel.extend({
 
         zoom: 1,
         scaleLimit: {
-            min: 0.8,
+            min: 1,
             max: 2.5
         },
 
@@ -192,6 +192,6 @@ export default SeriesModel.extend({
 
         roamAfterExpandAndCollapse: false,
 
-        roamZoomRadio: 1.1
+        // roamZoomRadio: 1
     }
 });

@@ -48188,7 +48188,7 @@ SeriesModel.extend({
 
         zoom: 1,
         scaleLimit: {
-            min: 0.8,
+            min: 1,
             max: 2.5
         },
 
@@ -48235,7 +48235,7 @@ SeriesModel.extend({
 
         roamAfterExpandAndCollapse: false,
 
-        roamZoomRadio: 1.1
+        // roamZoomRadio: 1
     }
 });
 
@@ -48664,15 +48664,15 @@ extendChartView({
         if (seriesModel.get('roamAfterExpandAndCollapse') && payload && payload.type === 'treeExpandAndCollapse') {
             var animationDurationUpdate = seriesModel.get('animationDurationUpdate');
             var frames = animationDurationUpdate / 1000 * 60;
-            var kx = seriesModel.layoutInfo.kx / (payload.depth + 1);
+            var zoom = seriesModel.coordinateSystem.getZoom();
+            var kx = seriesModel.layoutInfo.kx / 3 * zoom;
             if (payload.depth === seriesModel.layoutInfo.depth) {
                 kx = 0;
             }
             var ky = seriesModel.layoutInfo.ky;
-            var roamZoomRadio = seriesModel.get('roamZoomRadio');
-            var zoom = seriesModel.coordinateSystem.getZoom();
+            // var roamZoomRadio = seriesModel.get('roamZoomRadio');
             var scaleLimit = seriesModel.get('scaleLimit');
-            var zoomTo = (2 * roamZoomRadio - ky / 15);
+            var zoomTo = zoom * (2 - (ky / 15 * zoom));
             if (scaleLimit.min > zoomTo) {
                 zoomTo = scaleLimit.min;
             }
