@@ -48664,41 +48664,35 @@ extendChartView({
         if (seriesModel.get('roamAfterExpandAndCollapse') && payload && payload.type === 'treeExpandAndCollapse') {
             var animationDurationUpdate = seriesModel.get('animationDurationUpdate');
             var frames = animationDurationUpdate / 1000 * 60;
+            var kx = seriesModel.layoutInfo.kx / (payload.depth + 1);
+            if (payload.depth === seriesModel.layoutInfo.depth) {
+                kx = 0;
+            }
+            var ky = seriesModel.layoutInfo.ky;
+            var roamZoomRadio = seriesModel.get('roamZoomRadio');
+            var zoom = seriesModel.coordinateSystem.getZoom();
+            var scaleLimit = seriesModel.get('scaleLimit');
+            var zoomTo = (2 * roamZoomRadio - ky / 15);
+            if (scaleLimit.min > zoomTo) {
+                zoomTo = scaleLimit.min;
+            }
+            else if (scaleLimit.max < zoomTo) {
+                zoomTo = scaleLimit.max;
+            }
+            var zoomFlag = Math.abs(zoomTo - zoom) > 0.02;
             setTimeout(function () {
                 var el = seriesModel.getData().getItemGraphicEl(payload.dataIndex);
                 if (!el) {
                     return;
                 }
-                var kx = seriesModel.layoutInfo.kx / (payload.depth + 1);
-                if (payload.depth === seriesModel.layoutInfo.depth) {
-                    kx = 0;
-                }
-                var ky = seriesModel.layoutInfo.ky;
-
-                var zoom = seriesModel.coordinateSystem.getZoom();
-                var roamZoomRadio = seriesModel.get('roamZoomRadio');
-                var roamZoom = [2 - ky / 10, 2 - ky / 15];
-                var _zoom = 1;
-                if (payload.zoom && zoom < roamZoom[1]) {
-                    _zoom = 1 + (roamZoom[1] * roamZoomRadio - zoom) / frames;
-                }
-                /*else if (payload.expand === false && zoom > 1) {
-                    _zoom = 1 + (roamZoom[0] - zoom) / frames;
-                }*/
-
                 var count = 0;
                 var moveTo = function () {
-                    var temp = seriesModel.get('center') || [0, 0];
+                    var temp = seriesModel.get('center');
                     var dx = (temp[0] - el.position[0] - kx) / ((frames - count) / 3 + 1);
                     var dy = (temp[1] - el.position[1]) / ((frames - count) / 3 + 1);
-                    updateViewOnPan(this._controllerHost, dx * _zoom, dy * _zoom);
-                    api.dispatchAction({
-                        seriesId: seriesModel.id,
-                        type: 'treeRoam',
-                        dx: dx * _zoom,
-                        dy: dy * _zoom
-                    });
-                    if (_zoom) {
+                    if (zoomFlag) {
+                        var tempZoom = seriesModel.get('zoom');
+                        var _zoom = 1 + (zoomTo - tempZoom) / (frames - count + 1);
                         updateViewOnZoom(this._controllerHost, _zoom, temp[0], temp[1]);
                         api.dispatchAction({
                             seriesId: seriesModel.id,
@@ -48707,15 +48701,31 @@ extendChartView({
                             originX: temp[0],
                             originY: temp[1]
                         });
+                        updateViewOnPan(this._controllerHost, dx * _zoom, dy * _zoom);
+                        api.dispatchAction({
+                            seriesId: seriesModel.id,
+                            type: 'treeRoam',
+                            dx: dx * _zoom,
+                            dy: dy * _zoom
+                        });
+                        this._updateNodeAndLinkScale(seriesModel);
                     }
-                    this._updateNodeAndLinkScale(seriesModel);
+                    else {
+                        updateViewOnPan(this._controllerHost, dx, dy);
+                        api.dispatchAction({
+                            seriesId: seriesModel.id,
+                            type: 'treeRoam',
+                            dx: dx,
+                            dy: dy
+                        });
+                    }
                     if (count < frames) {
                         requestAnimationFrame(moveTo);
                     }
                     count++;
                 }.bind(this);
                 requestAnimationFrame(moveTo);
-            }.bind(this), payload.expand ? animationDurationUpdate + 100 : 0);
+            }.bind(this), zoomFlag ? animationDurationUpdate : 0);
         }
     },
 
@@ -48745,15 +48755,23 @@ extendChartView({
         viewCoordSys.zoomLimit = seriesModel.get('scaleLimit');
 
         viewCoordSys.setBoundingRect(min[0], min[1], max[0] - min[0], max[1] - min[1]);
+        var center = seriesModel.get('center');
+        var zoom = seriesModel.get('zoom');
 
-        viewCoordSys.setCenter(seriesModel.get('center'));
-        viewCoordSys.setZoom(seriesModel.get('zoom'));
+        viewCoordSys.setCenter(center);
+        viewCoordSys.setZoom(zoom);
+
+
         // Here we use viewCoordSys just for computing the 'position' and 'scale' of the group
         this.group.attr({
             position: viewCoordSys.position,
             scale: viewCoordSys.scale
         });
-
+        if (!center) {
+            var res = updateCenterAndZoom(viewCoordSys, {center: center, zoom: zoom});
+            seriesModel.setCenter(res.center);
+            seriesModel.setZoom(res.zoom);
+        }
         this._viewCoordSys = viewCoordSys;
     },
 
@@ -49157,16 +49175,9 @@ registerAction({
         }
         if (node.isExpand && node.isActive) {
             node.isExpand = false;
-            payload.expand = true;
         }
         else {
-            if (node.children.length !== 0) {
-                payload.expand = true;
-            }
             node.isExpand = true;
-        }
-        if (node.children.length !== 0 && node.isExpand) {
-            payload.zoom = true;
         }
         payload.dataIndex = node.dataIndex;
         payload.depth = node.depth;

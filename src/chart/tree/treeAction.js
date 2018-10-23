@@ -50,16 +50,9 @@ echarts.registerAction({
         }
         if (node.isExpand && node.isActive) {
             node.isExpand = false;
-            payload.expand = true;
         }
         else {
-            if (node.children.length !== 0) {
-                payload.expand = true;
-            }
             node.isExpand = true;
-        }
-        if (node.children.length !== 0 && node.isExpand) {
-            payload.zoom = true;
         }
         payload.dataIndex = node.dataIndex;
         payload.depth = node.depth;
