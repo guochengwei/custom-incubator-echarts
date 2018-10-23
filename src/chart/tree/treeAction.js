@@ -151,5 +151,6 @@ echarts.registerAction({
 
         seriesModel.setZoom
         && seriesModel.setZoom(res.zoom);
+        payload.realZoom = res.zoom;
     });
 });

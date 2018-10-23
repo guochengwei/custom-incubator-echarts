@@ -128,7 +128,12 @@ under the License.
                             update: 'update'
                         })
     
-                        
+                        chart.on('treeRoam', params => {
+                            console.log(params.realZoom)
+                            if (params.zoom) {
+                                console.log(params.realZoom)
+                            }
+                        })
                         chart.dispatchAction({
                             type: 'treeSearchHighlight',
                             seriesIndex: 0,
