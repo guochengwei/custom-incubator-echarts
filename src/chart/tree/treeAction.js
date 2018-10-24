@@ -117,9 +117,10 @@ echarts.registerAction({
                         if (nodeList.length === dataKey.length) {
                             throw new Error('break');
                         }
+                        var key = data.getRawDataItem(idx).key;
                         try {
                             dataKey.forEach(function (item) {
-                                if (data.getRawDataItem(idx).key === item) {
+                                if (key === item) {
                                     nodeList.push(tree.getNodeByDataIndex(idx));
                                     throw new Error('break');
                                 }
