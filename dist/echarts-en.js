@@ -49238,11 +49238,36 @@ registerAction({
             }
         }
         else if (dataKey) {
-            data.each(function (idx) {
-                if (data.getRawDataItem(idx).key === dataKey) {
-                    nodeList.push(tree.getNodeByDataIndex(idx));
+            if (Array.isArray(dataKey)) {
+                try {
+                    data.each(function (idx) {
+                        if (nodeList.length === dataKey.length) {
+                            throw new Error('break');
+                        }
+                        try {
+                            dataKey.forEach(function (item) {
+                                if (data.getRawDataItem(idx).key === item) {
+                                    nodeList.push(tree.getNodeByDataIndex(idx));
+                                    throw new Error('break');
+                                }
+                            });
+                        }
+                        catch (e) {}
+                    });
                 }
-            });
+                catch (e) { }
+            }
+            else {
+                try {
+                    data.each(function (idx) {
+                        if (data.getRawDataItem(idx).key === dataKey) {
+                            nodeList.push(tree.getNodeByDataIndex(idx));
+                            throw new Error('break');
+                        }
+                    });
+                }
+                catch (e) { }
+            }
         }
         nodeList.forEach(function (node) {
             node.getAncestors(true).forEach(function (item) {

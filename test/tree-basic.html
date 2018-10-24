@@ -134,24 +134,16 @@ require([
         chart.dispatchAction({
             type: 'treeSearchHighlight',
             seriesIndex: 0,
-            dataKey: '1-1'
-        })
-        chart.dispatchAction({
-            type: 'treeDownplay',
-            seriesIndex: 0
+            dataKey: ['1-1','1-2']
         })
         
-        /*setTimeout(function() {
-            var newData = echarts.util.clone(data);
-            newData.children.splice(0, 1);
-            chart.setOption({
-                series: [{
-                    type: 'tree',
-                    id: '3',
-                    data: [newData]
-                }]
-            }, false);
-        }, 1000);*/
+        
+        setTimeout(function() {
+            chart.dispatchAction({
+                type: 'treeDownplay',
+                seriesIndex: 0
+            })
+        }, 1000);
         
     })
 })
