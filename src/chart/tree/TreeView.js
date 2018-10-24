@@ -148,16 +148,18 @@ export default echarts.extendChartView({
             });
         }
         this._data = data;
-        if (seriesModel.get('roamAfterExpandAndCollapse') && payload && payload.type === 'treeExpandAndCollapse') {
+        if (seriesModel.get('roamAfterExpandAndCollapse')
+            && payload
+            && payload.type === 'treeExpandAndCollapse'
+            && data.getItemGraphicEl(payload.dataIndex)) {
             var animationDurationUpdate = seriesModel.get('animationDurationUpdate');
             var frames = animationDurationUpdate / 1000 * 60;
             var zoom = seriesModel.coordinateSystem.getZoom();
-            var kx = seriesModel.layoutInfo.kx / 3 * zoom;
-            if (payload.depth === seriesModel.layoutInfo.depth) {
-                kx = 0;
+            var kx = seriesModel.layoutInfo.kx / 2;
+            if (!payload.child) {
+                kx = -kx / 2;
             }
             var ky = seriesModel.layoutInfo.ky;
-            // var roamZoomRadio = seriesModel.get('roamZoomRadio');
             var scaleLimit = seriesModel.get('scaleLimit');
             var zoomTo = zoom * (2 - (ky / 15 * zoom));
             if (scaleLimit.min > zoomTo) {
@@ -166,53 +168,53 @@ export default echarts.extendChartView({
             else if (scaleLimit.max < zoomTo) {
                 zoomTo = scaleLimit.max;
             }
-            var zoomFlag = Math.abs(zoomTo - zoom) > 0.02;
-            setTimeout(function () {
-                var el = seriesModel.getData().getItemGraphicEl(payload.dataIndex);
-                if (!el) {
-                    return;
+
+            var zoomFlag = Math.abs(zoomTo - zoom) > 0.01;
+            var start = null;
+            var raf = null;
+            var position = null;
+            var count = -1;
+            var moveTo = function (now) {
+                !start && (start = now);
+                if (zoomFlag && now - start < animationDurationUpdate) {
+                    count--;
                 }
-                var count = 0;
-                var moveTo = function () {
-                    var temp = seriesModel.get('center');
-                    var dx = (temp[0] - el.position[0] - kx) / ((frames - count) / 3 + 1);
-                    var dy = (temp[1] - el.position[1]) / ((frames - count) / 3 + 1);
+                else {
+                    !position && (position = data.getItemGraphicEl(payload.dataIndex).position);
+                    var _center = seriesModel.get('center');
+                    var _count = frames - count;
+                    var dx = (_center[0] - position[0] - kx) / (_count / 3 + 1);
+                    var dy = (_center[1] - position[1]) / (_count / 3 + 1);
+                    roamHelper.updateViewOnPan(this._controllerHost, dx, dy);
+                    api.dispatchAction({
+                        seriesId: seriesModel.id,
+                        type: 'treeRoam',
+                        dx: dx,
+                        dy: dy
+                    });
                     if (zoomFlag) {
-                        var tempZoom = seriesModel.get('zoom');
-                        var _zoom = 1 + (zoomTo - tempZoom) / (frames - count + 1);
-                        roamHelper.updateViewOnZoom(this._controllerHost, _zoom, temp[0], temp[1]);
+                        var _zoom = seriesModel.get('zoom');
+                        var dZoom = 1 + (zoomTo - _zoom) / (_count + 1);
+                        roamHelper.updateViewOnZoom(this._controllerHost, dZoom, _center[0], _center[1]);
                         api.dispatchAction({
                             seriesId: seriesModel.id,
                             type: 'treeRoam',
-                            zoom: _zoom,
-                            originX: temp[0],
-                            originY: temp[1]
-                        });
-                        roamHelper.updateViewOnPan(this._controllerHost, dx * _zoom, dy * _zoom);
-                        api.dispatchAction({
-                            seriesId: seriesModel.id,
-                            type: 'treeRoam',
-                            dx: dx * _zoom,
-                            dy: dy * _zoom
+                            zoom: dZoom,
+                            originX: _center[0],
+                            originY: _center[1]
                         });
                         this._updateNodeAndLinkScale(seriesModel);
                     }
-                    else {
-                        roamHelper.updateViewOnPan(this._controllerHost, dx, dy);
-                        api.dispatchAction({
-                            seriesId: seriesModel.id,
-                            type: 'treeRoam',
-                            dx: dx,
-                            dy: dy
-                        });
-                    }
-                    if (count < frames) {
-                        requestAnimationFrame(moveTo);
-                    }
-                    count++;
-                }.bind(this);
-                requestAnimationFrame(moveTo);
-            }.bind(this), zoomFlag ? animationDurationUpdate : 0);
+                }
+                if (count < frames) {
+                    requestAnimationFrame(moveTo);
+                }
+                else {
+                    cancelAnimationFrame(raf);
+                }
+                count++;
+            }.bind(this);
+            raf = requestAnimationFrame(moveTo);
         }
     },
 
