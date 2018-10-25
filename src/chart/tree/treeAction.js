@@ -56,6 +56,7 @@ echarts.registerAction({
         }
         payload.dataIndex = node.dataIndex;
         payload.child = node.children.length > 0;
+        payload.depth = node.depth;
         tree.root.eachNode(function (item) {
             item.isActive = false;
             var el = data.getItemGraphicEl(item.dataIndex);

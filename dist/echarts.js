@@ -48615,6 +48615,9 @@ extendChartView({
             useNameLabel: true,
             fadeIn: false
         };
+        if (!this._fontSize) {
+            this._fontSize = seriesModel.get('label.fontSize');
+        }
         data.diff(oldData)
         .add(function (newIdx) {
             if (symbolNeedsDraw$1(data, newIdx)) {
@@ -48628,7 +48631,6 @@ extendChartView({
                 symbolEl && removeNode(oldData, oldIdx, symbolEl, group, seriesModel, seriesScope);
                 return;
             }
-
             // Update node and edge
             updateNode(data, newIdx, symbolEl, group, seriesModel, seriesScope);
         })
@@ -48666,14 +48668,17 @@ extendChartView({
             && payload.type === 'treeExpandAndCollapse'
             && data.getItemGraphicEl(payload.dataIndex)) {
             var animationDurationUpdate = seriesModel.get('animationDurationUpdate');
+            var scaleLimit = seriesModel.get('scaleLimit');
             var frames = animationDurationUpdate / 1000 * 60;
-            var zoom = seriesModel.coordinateSystem.getZoom();
-            var kx = seriesModel.layoutInfo.kx / 2;
+            var zoom = this._viewCoordSys.getZoom();
+            var kx = layoutInfo.kx / 2;
             if (!payload.child) {
                 kx = -kx / 2;
             }
-            var ky = seriesModel.layoutInfo.ky;
-            var scaleLimit = seriesModel.get('scaleLimit');
+            if (payload.depth < 3 && layoutInfo.depth < 3) {
+                kx = 0;
+            }
+            var ky = layoutInfo.ky;
             var zoomTo = zoom * (2 - (ky / 15 * zoom));
             if (scaleLimit.min > zoomTo) {
                 zoomTo = scaleLimit.min;
@@ -48723,6 +48728,13 @@ extendChartView({
                     requestAnimationFrame(moveTo);
                 }
                 else {
+                    if (zoomFlag) {
+                        var scaleFontSize = Math.ceil(this._fontSize * (1 + (_zoom - 1) / 10));
+                        if (scaleFontSize !== seriesModel.option.label.fontSize) {
+                            seriesModel.option.label.fontSize = Math.ceil(this._fontSize * (1 + (_zoom - 1) / 10));
+                            this.render(seriesModel, ecModel, api);
+                        }
+                    }
                     cancelAnimationFrame(raf);
                 }
                 count++;
@@ -48822,7 +48834,6 @@ extendChartView({
 
         var nodeScale = this._getNodeGlobalScale(seriesModel);
         var invScale = [nodeScale, nodeScale];
-
         data.eachItemGraphicEl(function (el, idx) {
             el.attr('scale', invScale);
         });
@@ -49183,6 +49194,7 @@ registerAction({
         }
         payload.dataIndex = node.dataIndex;
         payload.child = node.children.length > 0;
+        payload.depth = node.depth;
         tree.root.eachNode(function (item) {
             item.isActive = false;
             var el = data.getItemGraphicEl(item.dataIndex);
@@ -49465,17 +49477,17 @@ function commonLayout(seriesModel, api) {
         }
         else {
             var orient = seriesModel.getOrient();
-            seriesModel.layoutInfo.kx = width / ((bottom.depth - 1) || 1);
-            seriesModel.layoutInfo.depth = bottom.depth;
-            seriesModel.layoutInfo.ky = height / (right.getLayout().x + delta + tx);
+            layoutInfo.kx = width / ((bottom.depth - 1) || 1);
+            layoutInfo.depth = bottom.depth;
+            layoutInfo.ky = height / (right.getLayout().x + delta + tx);
             if (orient === 'RL' || orient === 'LR') {
                 ky = height / (right.getLayout().x + delta + tx);
                 kx = width / ((bottom.depth - 1) || 1);
                 eachBefore(realRoot, function (node) {
                     coorY = (node.getLayout().x + tx) * ky;
                     coorX = orient === 'LR'
-                        ? (node.depth - 1) * kx
-                        : width - (node.depth - 1) * kx;
+                            ? (node.depth - 1) * kx
+                            : width - (node.depth - 1) * kx;
                     node.setLayout({x: coorX, y: coorY}, true);
                 });
             }
@@ -49485,8 +49497,8 @@ function commonLayout(seriesModel, api) {
                 eachBefore(realRoot, function (node) {
                     coorX = (node.getLayout().x + tx) * kx;
                     coorY = orient === 'TB'
-                        ? (node.depth - 1) * ky
-                        : height - (node.depth - 1) * ky;
+                            ? (node.depth - 1) * ky
+                            : height - (node.depth - 1) * ky;
                     node.setLayout({x: coorX, y: coorY}, true);
                 });
             }

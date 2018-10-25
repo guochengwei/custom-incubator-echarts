@@ -102,6 +102,9 @@ export default echarts.extendChartView({
             useNameLabel: true,
             fadeIn: false
         };
+        if (!this._fontSize) {
+            this._fontSize = seriesModel.get('label.fontSize');
+        }
         data.diff(oldData)
         .add(function (newIdx) {
             if (symbolNeedsDraw(data, newIdx)) {
@@ -115,7 +118,6 @@ export default echarts.extendChartView({
                 symbolEl && removeNode(oldData, oldIdx, symbolEl, group, seriesModel, seriesScope);
                 return;
             }
-
             // Update node and edge
             updateNode(data, newIdx, symbolEl, group, seriesModel, seriesScope);
         })
@@ -153,14 +155,17 @@ export default echarts.extendChartView({
             && payload.type === 'treeExpandAndCollapse'
             && data.getItemGraphicEl(payload.dataIndex)) {
             var animationDurationUpdate = seriesModel.get('animationDurationUpdate');
+            var scaleLimit = seriesModel.get('scaleLimit');
             var frames = animationDurationUpdate / 1000 * 60;
-            var zoom = seriesModel.coordinateSystem.getZoom();
-            var kx = seriesModel.layoutInfo.kx / 2;
+            var zoom = this._viewCoordSys.getZoom();
+            var kx = layoutInfo.kx / 2;
             if (!payload.child) {
                 kx = -kx / 2;
             }
-            var ky = seriesModel.layoutInfo.ky;
-            var scaleLimit = seriesModel.get('scaleLimit');
+            if (payload.depth < 3 && layoutInfo.depth < 3) {
+                kx = 0;
+            }
+            var ky = layoutInfo.ky;
             var zoomTo = zoom * (2 - (ky / 15 * zoom));
             if (scaleLimit.min > zoomTo) {
                 zoomTo = scaleLimit.min;
@@ -210,6 +215,13 @@ export default echarts.extendChartView({
                     requestAnimationFrame(moveTo);
                 }
                 else {
+                    if (zoomFlag) {
+                        var scaleFontSize = Math.ceil(this._fontSize * (1 + (_zoom - 1) / 10));
+                        if (scaleFontSize !== seriesModel.option.label.fontSize) {
+                            seriesModel.option.label.fontSize = Math.ceil(this._fontSize * (1 + (_zoom - 1) / 10));
+                            this.render(seriesModel, ecModel, api);
+                        }
+                    }
                     cancelAnimationFrame(raf);
                 }
                 count++;
@@ -309,7 +321,6 @@ export default echarts.extendChartView({
 
         var nodeScale = this._getNodeGlobalScale(seriesModel);
         var invScale = [nodeScale, nodeScale];
-
         data.eachItemGraphicEl(function (el, idx) {
             el.attr('scale', invScale);
         });

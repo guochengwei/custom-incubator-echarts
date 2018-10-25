@@ -100,17 +100,17 @@ function commonLayout(seriesModel, api) {
         }
         else {
             var orient = seriesModel.getOrient();
-            seriesModel.layoutInfo.kx = width / ((bottom.depth - 1) || 1);
-            seriesModel.layoutInfo.depth = bottom.depth;
-            seriesModel.layoutInfo.ky = height / (right.getLayout().x + delta + tx);
+            layoutInfo.kx = width / ((bottom.depth - 1) || 1);
+            layoutInfo.depth = bottom.depth;
+            layoutInfo.ky = height / (right.getLayout().x + delta + tx);
             if (orient === 'RL' || orient === 'LR') {
                 ky = height / (right.getLayout().x + delta + tx);
                 kx = width / ((bottom.depth - 1) || 1);
                 eachBefore(realRoot, function (node) {
                     coorY = (node.getLayout().x + tx) * ky;
                     coorX = orient === 'LR'
-                        ? (node.depth - 1) * kx
-                        : width - (node.depth - 1) * kx;
+                            ? (node.depth - 1) * kx
+                            : width - (node.depth - 1) * kx;
                     node.setLayout({x: coorX, y: coorY}, true);
                 });
             }
@@ -120,8 +120,8 @@ function commonLayout(seriesModel, api) {
                 eachBefore(realRoot, function (node) {
                     coorX = (node.getLayout().x + tx) * kx;
                     coorY = orient === 'TB'
-                        ? (node.depth - 1) * ky
-                        : height - (node.depth - 1) * ky;
+                            ? (node.depth - 1) * ky
+                            : height - (node.depth - 1) * ky;
                     node.setLayout({x: coorX, y: coorY}, true);
                 });
             }
