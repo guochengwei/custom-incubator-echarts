@@ -35449,7 +35449,6 @@ symbolProto._createSymbol = function (
     this.removeAll();
 
     var color = data.getItemVisual(idx, 'color');
-
     // var symbolPath = createSymbol(
     //     symbolType, -0.5, -0.5, 1, 1, color
     // );
@@ -35552,11 +35551,10 @@ symbolProto.setDraggable = function (draggable) {
 symbolProto.updateData = function (data, idx, seriesScope) {
     this.silent = false;
 
-    var symbolType = data.getItemVisual(idx, 'symbol') || 'circle';
+    var symbolType = seriesScope.itemStyle.symbol || data.getItemVisual(idx, 'symbol') || 'circle';
     var seriesModel = data.hostModel;
     var symbolSize = getSymbolSize(data, idx);
     var isInit = symbolType !== this._symbolType;
-
     if (isInit) {
         var keepAspect = data.getItemVisual(idx, 'symbolKeepAspect');
         this._createSymbol(symbolType, data, idx, symbolSize, keepAspect);
@@ -48670,7 +48668,7 @@ extendChartView({
             var animationDurationUpdate = seriesModel.get('animationDurationUpdate');
             var scaleLimit = seriesModel.get('scaleLimit');
             var frames = animationDurationUpdate / 1000 * 60;
-            var zoom = this._viewCoordSys.getZoom();
+            var zoom = seriesModel.coordinateSystem.getZoom();
             var kx = layoutInfo.kx / 2;
             if (!payload.child) {
                 kx = -kx / 2;
@@ -48679,7 +48677,7 @@ extendChartView({
                 kx = 0;
             }
             var ky = layoutInfo.ky;
-            var zoomTo = zoom * (2 - (ky / 15 * zoom));
+            var zoomTo = zoom * 1 / (ky / 15 * zoom);
             if (scaleLimit.min > zoomTo) {
                 zoomTo = scaleLimit.min;
             }
@@ -48817,6 +48815,12 @@ extendChartView({
             updateViewOnPan(controllerHost, e.dx, e.dy);
         }, this)
         .on('zoom', function (e) {
+            var _zoom = seriesModel.get('zoom');
+            var scaleFontSize = Math.ceil(this._fontSize * (1 + (_zoom - 1) / 10));
+            if (scaleFontSize !== seriesModel.option.label.fontSize) {
+                seriesModel.option.label.fontSize = Math.ceil(this._fontSize * (1 + (_zoom - 1) / 10));
+                this.render(seriesModel, ecModel, api);
+            }
             api.dispatchAction({
                 seriesId: seriesModel.id,
                 type: 'treeRoam',
@@ -48885,11 +48889,15 @@ function getTreeNodeStyle(node, itemModel, seriesScope) {
     seriesScope.lineStyle = itemModel.getModel('lineStyle').getLineStyle();
     seriesScope.hoverLineModel = itemModel.getModel('emphasis.lineStyle').getLineStyle();
     seriesScope.hoverAnimation = true;
+    var _symbol = itemModel.get('itemStyle.symbol');
+    if (node.isExpand === false && node.children.length !== 0) {
+        seriesScope.symbolInnerColor = seriesScope.itemStyle.fill;
+        if (_symbol) {
+            seriesScope.itemStyle.symbol = _symbol;
+        }
+    }
     if (node.isActive) {
         seriesScope.symbolInnerColor = seriesScope.hoverItemStyle.fill;
-    }
-    else if (node.isExpand === false && node.children.length !== 0) {
-        seriesScope.symbolInnerColor = seriesScope.itemStyle.fill;
     }
     else {
         seriesScope.symbolInnerColor = '#fff';

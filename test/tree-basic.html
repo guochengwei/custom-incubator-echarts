@@ -80,12 +80,15 @@ require([
                         max: 3.5
                     },
                     // initialTreeDepth: -1,
-                    
+                    itemStyle: {
+                        symbol: 'diamond',
+                        color: null
+                    },
                     label: {
                         position: 'left',
                         verticalAlign: 'middle',
                         align: 'right',
-                        fontSize:12
+                        fontSize: 12
                     },
                     leaves: {
                         label: {
@@ -110,7 +113,7 @@ require([
                     // expandAndCollapse: false,
                     animationDuration: 300,
                     animationDurationUpdate: 300,
-                    roamAfterExpandAndCollapse: true,
+                    roamAfterExpandAndCollapse: true
                     // roamZoomRadio:1.2
                 }
             ]
@@ -134,16 +137,16 @@ require([
         chart.dispatchAction({
             type: 'treeSearchHighlight',
             seriesIndex: 0,
-            dataKey: ['1-1','1-2']
+            dataKey: ['1-1', '1-2']
         })
         
         
-        setTimeout(function() {
+        setTimeout(function () {
             chart.dispatchAction({
                 type: 'treeDownplay',
                 seriesIndex: 0
             })
-        }, 1000);
+        }, 1000)
         
     })
 })

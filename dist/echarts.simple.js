@@ -31535,7 +31535,6 @@ symbolProto._createSymbol = function (
     this.removeAll();
 
     var color = data.getItemVisual(idx, 'color');
-
     // var symbolPath = createSymbol(
     //     symbolType, -0.5, -0.5, 1, 1, color
     // );
@@ -31638,11 +31637,10 @@ symbolProto.setDraggable = function (draggable) {
 symbolProto.updateData = function (data, idx, seriesScope) {
     this.silent = false;
 
-    var symbolType = data.getItemVisual(idx, 'symbol') || 'circle';
+    var symbolType = seriesScope.itemStyle.symbol || data.getItemVisual(idx, 'symbol') || 'circle';
     var seriesModel = data.hostModel;
     var symbolSize = getSymbolSize(data, idx);
     var isInit = symbolType !== this._symbolType;
-
     if (isInit) {
         var keepAspect = data.getItemVisual(idx, 'symbolKeepAspect');
         this._createSymbol(symbolType, data, idx, symbolSize, keepAspect);

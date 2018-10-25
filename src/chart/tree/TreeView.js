@@ -157,7 +157,7 @@ export default echarts.extendChartView({
             var animationDurationUpdate = seriesModel.get('animationDurationUpdate');
             var scaleLimit = seriesModel.get('scaleLimit');
             var frames = animationDurationUpdate / 1000 * 60;
-            var zoom = this._viewCoordSys.getZoom();
+            var zoom = seriesModel.coordinateSystem.getZoom();
             var kx = layoutInfo.kx / 2;
             if (!payload.child) {
                 kx = -kx / 2;
@@ -166,7 +166,7 @@ export default echarts.extendChartView({
                 kx = 0;
             }
             var ky = layoutInfo.ky;
-            var zoomTo = zoom * (2 - (ky / 15 * zoom));
+            var zoomTo = zoom * 1 / (ky / 15 * zoom);
             if (scaleLimit.min > zoomTo) {
                 zoomTo = scaleLimit.min;
             }
@@ -304,6 +304,12 @@ export default echarts.extendChartView({
             roamHelper.updateViewOnPan(controllerHost, e.dx, e.dy);
         }, this)
         .on('zoom', function (e) {
+            var _zoom = seriesModel.get('zoom');
+            var scaleFontSize = Math.ceil(this._fontSize * (1 + (_zoom - 1) / 10));
+            if (scaleFontSize !== seriesModel.option.label.fontSize) {
+                seriesModel.option.label.fontSize = Math.ceil(this._fontSize * (1 + (_zoom - 1) / 10));
+                this.render(seriesModel, ecModel, api);
+            }
             api.dispatchAction({
                 seriesId: seriesModel.id,
                 type: 'treeRoam',
@@ -372,11 +378,15 @@ function getTreeNodeStyle(node, itemModel, seriesScope) {
     seriesScope.lineStyle = itemModel.getModel('lineStyle').getLineStyle();
     seriesScope.hoverLineModel = itemModel.getModel('emphasis.lineStyle').getLineStyle();
     seriesScope.hoverAnimation = true;
+    var _symbol = itemModel.get('itemStyle.symbol');
+    if (node.isExpand === false && node.children.length !== 0) {
+        seriesScope.symbolInnerColor = seriesScope.itemStyle.fill;
+        if (_symbol) {
+            seriesScope.itemStyle.symbol = _symbol;
+        }
+    }
     if (node.isActive) {
         seriesScope.symbolInnerColor = seriesScope.hoverItemStyle.fill;
-    }
-    else if (node.isExpand === false && node.children.length !== 0) {
-        seriesScope.symbolInnerColor = seriesScope.itemStyle.fill;
     }
     else {
         seriesScope.symbolInnerColor = '#fff';
