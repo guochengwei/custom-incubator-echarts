@@ -378,11 +378,15 @@ function getTreeNodeStyle(node, itemModel, seriesScope) {
     seriesScope.lineStyle = itemModel.getModel('lineStyle').getLineStyle();
     seriesScope.hoverLineModel = itemModel.getModel('emphasis.lineStyle').getLineStyle();
     seriesScope.hoverAnimation = true;
-    var _symbol = itemModel.get('itemStyle.symbol');
+    var expandSymbol = itemModel.get('expandSymbol');
+    var customSymbol = itemModel.get('itemStyle.symbol');
+    if (customSymbol) {
+        seriesScope.itemStyle.symbol = customSymbol;
+    }
     if (node.isExpand === false && node.children.length !== 0) {
         seriesScope.symbolInnerColor = seriesScope.itemStyle.fill;
-        if (_symbol) {
-            seriesScope.itemStyle.symbol = _symbol;
+        if (expandSymbol) {
+            seriesScope.itemStyle.symbol = expandSymbol;
         }
     }
     if (node.isActive) {

@@ -52,6 +52,10 @@ require([
         
         echarts.util.each(data.children, function (datum, index) {
             datum.key = '1-' + index
+            datum.itemStyle = {
+                symbol: 'roundRect',
+                color: null
+            }
             index % 2 === 0 && (datum.collapsed = true)
         })
         chart.setOption({
@@ -72,17 +76,19 @@ require([
                     bottom: '1%',
                     right: '10%',
                     roam: true,
-                    symbol: 'emptyRoundRect',
+                    symbol: 'roundRect',
+                    expandSymbol: 'path://M102.4 0h819.2c56.553472 0 102.4 45.846528 102.4 102.4v819.2c0 56.553472-45.846528 102.4-102.4 102.4H102.4C45.846528 1024 0 978.153472 0 921.6V102.4C0 45.846528 45.846528 0 102.4 0z m371.2 473.6H281.6c-21.20704 0-38.4 17.19296-38.4 38.4s17.19296 38.4 38.4 38.4h192V742.4c0 21.20704 17.19296 38.4 38.4 38.4s38.4-17.19296 38.4-38.4V550.4H742.4c21.20704 0 38.4-17.19296 38.4-38.4s-17.19296-38.4-38.4-38.4H550.4V281.6c0-21.20704-17.19296-38.4-38.4-38.4s-38.4 17.19296-38.4 38.4v192z',
                     symbolSize: 10,
-                    nodeScaleRatio: 0,
+                    nodeScaleRatio: 0.2,
                     scaleLimit: {
                         min: 1,
                         max: 3.5
                     },
                     // initialTreeDepth: -1,
                     itemStyle: {
-                        symbol: 'diamond',
-                        color: null
+                        borderColor:'#fff',
+                        borderWidth: 0.5,
+                        color: null,
                     },
                     label: {
                         position: 'left',
