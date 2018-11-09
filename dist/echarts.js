@@ -48654,7 +48654,7 @@ extendChartView({
         this._updateNodeAndLinkScale(seriesModel);
 
 
-        if (seriesScope.expandAndCollapse === true) {
+        if (seriesScope.expandAndCollapse) {
             data.eachItemGraphicEl(function (el, dataIndex) {
                 el.off('click').on('click', function (e) {
                     api.dispatchAction({
