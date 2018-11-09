@@ -48107,17 +48107,22 @@ SeriesModel.extend({
             }
         });
         var expandAndCollapse = option.expandAndCollapse;
-        var expandTreeDepth = (expandAndCollapse && option.initialTreeDepth >= 0)
-                              ? option.initialTreeDepth : treeDepth;
-
-        tree.root.eachNode('preorder', function (node) {
-            var item = node.hostTree.data.getRawDataItem(node.dataIndex);
-            // Add item.collapsed != null, because users can collapse node original in the series.data.
-            node.isExpand = (item && item.collapsed != null)
-                            ? !item.collapsed
-                            : node.depth <= expandTreeDepth;
-        });
-
+        if (expandAndCollapse === 'forceExpand') {
+            tree.root.eachNode('preorder', function (node) {
+                node.isExpand = true;
+            });
+        }
+        else {
+            var expandTreeDepth = (expandAndCollapse && option.initialTreeDepth >= 0)
+                                  ? option.initialTreeDepth : treeDepth;
+            tree.root.eachNode('preorder', function (node) {
+                var item = node.hostTree.data.getRawDataItem(node.dataIndex);
+                // Add item.collapsed != null, because users can collapse node original in the series.data.
+                node.isExpand = (item && item.collapsed != null)
+                                ? !item.collapsed
+                                : node.depth <= expandTreeDepth;
+            });
+        }
         return tree.data;
     },
 
@@ -48231,7 +48236,7 @@ SeriesModel.extend({
 
         animationDurationUpdate: 1000,
 
-        roamAfterExpandAndCollapse: false,
+        roamAfterExpandAndCollapse: false
 
         // roamZoomRadio: 1
     }
