@@ -127,7 +127,7 @@ export default echarts.extendChartView({
             // node haven't been initialized with a symbol element,
             // you can't found it's symbol element through index.
             // so if we want to remove the symbol element we should insure
-            // that the symbol element is not null.
+            // sybolthat the symbol element is not null.
             if (symbolEl) {
                 removeNode(oldData, oldIdx, symbolEl, group, seriesModel, seriesScope);
             }

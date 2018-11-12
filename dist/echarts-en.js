@@ -35551,7 +35551,7 @@ symbolProto.setDraggable = function (draggable) {
 symbolProto.updateData = function (data, idx, seriesScope) {
     this.silent = false;
 
-    var symbolType = seriesScope.itemStyle.symbol || data.getItemVisual(idx, 'symbol') || 'circle';
+    var symbolType = (seriesScope && seriesScope.itemStyle.symbol) || data.getItemVisual(idx, 'symbol') || 'circle';
     var seriesModel = data.hostModel;
     var symbolSize = getSymbolSize(data, idx);
     var isInit = symbolType !== this._symbolType;
@@ -48643,7 +48643,7 @@ extendChartView({
             // node haven't been initialized with a symbol element,
             // you can't found it's symbol element through index.
             // so if we want to remove the symbol element we should insure
-            // that the symbol element is not null.
+            // sybolthat the symbol element is not null.
             if (symbolEl) {
                 removeNode(oldData, oldIdx, symbolEl, group, seriesModel, seriesScope);
             }

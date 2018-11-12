@@ -31637,7 +31637,7 @@ symbolProto.setDraggable = function (draggable) {
 symbolProto.updateData = function (data, idx, seriesScope) {
     this.silent = false;
 
-    var symbolType = seriesScope.itemStyle.symbol || data.getItemVisual(idx, 'symbol') || 'circle';
+    var symbolType = (seriesScope && seriesScope.itemStyle.symbol) || data.getItemVisual(idx, 'symbol') || 'circle';
     var seriesModel = data.hostModel;
     var symbolSize = getSymbolSize(data, idx);
     var isInit = symbolType !== this._symbolType;
