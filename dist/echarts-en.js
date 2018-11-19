@@ -48732,11 +48732,13 @@ extendChartView({
                 }
                 else {
                     if (zoomFlag) {
-                        var scaleFontSize = Math.ceil(this._fontSize * (1 + (_zoom - 1) / 10));
-                        if (scaleFontSize !== seriesModel.option.label.fontSize) {
-                            seriesModel.option.label.fontSize = Math.ceil(this._fontSize * (1 + (_zoom - 1) / 10));
-                            this.render(seriesModel, ecModel, api);
-                        }
+                        setTimeout(function () {
+                            var scaleFontSize = Math.ceil(this._fontSize * (1 + (_zoom - 1) / 10));
+                            if (scaleFontSize !== seriesModel.option.label.fontSize) {
+                                seriesModel.option.label.fontSize = scaleFontSize;
+                                this.render(seriesModel, ecModel, api);
+                            }
+                        }.bind(this), 200);
                     }
                     cancelAnimationFrame(raf);
                 }
@@ -48823,7 +48825,7 @@ extendChartView({
             var _zoom = seriesModel.get('zoom');
             var scaleFontSize = Math.ceil(this._fontSize * (1 + (_zoom - 1) / 10));
             if (scaleFontSize !== seriesModel.option.label.fontSize) {
-                seriesModel.option.label.fontSize = Math.ceil(this._fontSize * (1 + (_zoom - 1) / 10));
+                seriesModel.option.label.fontSize = scaleFontSize;
                 this.render(seriesModel, ecModel, api);
             }
             api.dispatchAction({
