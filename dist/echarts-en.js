@@ -48236,8 +48236,9 @@ SeriesModel.extend({
 
         animationDurationUpdate: 1000,
 
-        roamAfterExpandAndCollapse: false
+        roamAfterExpandAndCollapse: false,
 
+        zoomThreshold: 0.2
         // roamZoomRadio: 1
     }
 });
@@ -48670,6 +48671,7 @@ extendChartView({
             && payload
             && payload.type === 'treeExpandAndCollapse'
             && data.getItemGraphicEl(payload.dataIndex)) {
+            var zoomThreshold = seriesModel.get('zoomThreshold');
             var animationDurationUpdate = seriesModel.get('animationDurationUpdate');
             var scaleLimit = seriesModel.get('scaleLimit');
             var frames = animationDurationUpdate / 1000 * 60;
@@ -48690,20 +48692,21 @@ extendChartView({
                 zoomTo = scaleLimit.max;
             }
 
-            var zoomFlag = Math.abs(zoomTo - zoom) > 0.01;
+            var zoomFlag = Math.abs(zoomTo - zoom) > zoomThreshold;
             var start = null;
             var raf = null;
             var position = null;
-            var count = -1;
+            var lastTime = null;
             var moveTo = function (now) {
-                !start && (start = now);
+                !start && (start = lastTime = now);
+                var realCount = Math.round((now - lastTime) / 16.666667);
                 if (zoomFlag && now - start < animationDurationUpdate) {
-                    count--;
+                    lastTime = now;
                 }
                 else {
                     !position && (position = data.getItemGraphicEl(payload.dataIndex).position);
                     var _center = seriesModel.get('center');
-                    var _count = frames - count;
+                    var _count = frames - realCount > 0 ? frames - realCount : 1;
                     var dx = (_center[0] - position[0] - kx) / (_count / 3 + 1);
                     var dy = (_center[1] - position[1]) / (_count / 3 + 1);
                     updateViewOnPan(this._controllerHost, dx, dy);
@@ -48727,7 +48730,7 @@ extendChartView({
                         this._updateNodeAndLinkScale(seriesModel);
                     }
                 }
-                if (count < frames) {
+                if (realCount < frames) {
                     requestAnimationFrame(moveTo);
                 }
                 else {
@@ -48742,7 +48745,6 @@ extendChartView({
                     }
                     cancelAnimationFrame(raf);
                 }
-                count++;
             }.bind(this);
             raf = requestAnimationFrame(moveTo);
         }

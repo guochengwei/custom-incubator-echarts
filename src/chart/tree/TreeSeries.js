@@ -195,8 +195,9 @@ export default SeriesModel.extend({
 
         animationDurationUpdate: 1000,
 
-        roamAfterExpandAndCollapse: false
+        roamAfterExpandAndCollapse: false,
 
+        zoomThreshold: 0.2
         // roamZoomRadio: 1
     }
 });
