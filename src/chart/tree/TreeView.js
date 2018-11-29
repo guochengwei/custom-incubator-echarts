@@ -210,7 +210,6 @@ export default echarts.extendChartView({
                             originX: _center[0],
                             originY: _center[1]
                         });
-                        this._updateNodeAndLinkScale(seriesModel);
                     }
                 }
                 if (realCount < frames) {

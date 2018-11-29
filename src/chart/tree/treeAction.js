@@ -54,6 +54,9 @@ echarts.registerAction({
         else {
             node.isExpand = true;
         }
+        if (payload.expand !== undefined) {
+            node.isExpand = payload.expand;
+        }
         payload.dataIndex = node.dataIndex;
         payload.child = node.children.length > 0;
         payload.depth = node.depth;
