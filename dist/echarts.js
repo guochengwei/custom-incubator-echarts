@@ -49191,17 +49191,33 @@ registerAction({
     ecModel.eachComponent({mainType: 'series', subType: 'tree', query: payload}, function (seriesModel) {
         var dataIndex = payload.dataIndex;
         var dataName = payload.dataName;
+        var dataKey = payload.dataKey;
         var data = seriesModel.getData();
         var tree = data.tree;
-        var node = (dataIndex && tree.getNodeByDataIndex(dataIndex)) || (dataName && tree.getNodeListByName(dataName));
-
-        if (Array.isArray(node)) {
+        var node = null;
+        if (dataIndex) {
+            node = tree.getNodeByDataIndex(dataIndex);
+        }
+        else if (dataName) {
+            node = tree.getNodeListByName(dataName);
             node = node.length === 1
                    ? node[0]
                    : node.find(function (item) {
-                    return data.getRawDataItem(item.dataIndex).key === payload.dataKey;
+                    return data.getRawDataItem(item.dataIndex).key === dataKey;
                 });
         }
+        else if (dataKey) {
+            try {
+                data.each(function (idx) {
+                    if (data.getRawDataItem(idx).key === dataKey) {
+                        node = tree.getNodeByDataIndex(idx);
+                        throw new Error('break');
+                    }
+                });
+            }
+            catch (e) { }
+        }
+
         if (!node) {
             payload = null;
             return;
