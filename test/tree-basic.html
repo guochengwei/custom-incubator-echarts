@@ -125,6 +125,11 @@ require([
             ]
         })
         echarts.registerAction({
+            type: 'treeCollapse',
+            event: 'treeCollapse',
+            update: 'update'
+        })
+        echarts.registerAction({
             type: 'treeExpandAndCollapse',
             event: 'treeExpandAndCollapse',
             update: 'update'
@@ -139,18 +144,17 @@ require([
             event: 'treeDownplay',
             update: 'update'
         })
-        
         chart.dispatchAction({
-            type: 'treeSearchHighlight',
-            seriesIndex: 0,
-            dataKey: ['1-1', '1-2']
+            type: 'treeCollapse',
+            seriesIndex: 0
         })
-        
+
         
         setTimeout(function () {
             chart.dispatchAction({
-                type: 'treeDownplay',
-                seriesIndex: 0
+                type: 'treeSearchHighlight',
+                seriesIndex: 0,
+                dataKey: ['1-1', '1-2']
             })
         }, 1000)
         
