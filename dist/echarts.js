@@ -48727,6 +48727,7 @@ extendChartView({
                             originX: _center[0],
                             originY: _center[1]
                         });
+                      this._updateNodeAndLinkScale(seriesModel);
                     }
                 }
                 if (realCount < frames) {
@@ -48740,7 +48741,7 @@ extendChartView({
                                 seriesModel.option.label.fontSize = scaleFontSize;
                                 this.render(seriesModel, ecModel, api);
                             }
-                        }.bind(this), 200);
+                        }.bind(this), 0);
                     }
                     cancelAnimationFrame(raf);
                 }
@@ -49195,34 +49196,30 @@ registerAction({
     var node = null;
     if (dataIndex) {
       node = tree.getNodeByDataIndex(dataIndex);
-    }
-    else if (dataName) {
+    } else if (dataName) {
       node = tree.getNodeListByName(dataName);
       node = node.length === 1
              ? node[0]
              : node.find(function (item) {
-          return data.getRawDataItem(item.dataIndex).key === dataKey;
+          return data.getRawDataItem(item.dataIndex).key === dataKey
         });
-    }
-    else if (dataKey) {
+    } else if (dataKey) {
       try {
         data.each(function (idx) {
           if (data.getRawDataItem(idx).key === dataKey) {
             node = tree.getNodeByDataIndex(idx);
-            throw new Error('break');
+            throw new Error('break')
           }
         });
-      }
-      catch (e) { }
+      } catch (e) { }
     }
     if (!node) {
       payload = null;
-      return;
+      return
     }
     if (node.isExpand && node.isActive) {
       node.isExpand = false;
-    }
-    else {
+    } else {
       node.isExpand = true;
     }
     if (payload.expand !== undefined) {
@@ -49256,8 +49253,9 @@ registerAction({
     var data = seriesModel.getData();
     var tree = data.tree;
     tree.root.eachNode(function (item) {
-      item.isActive = false;
-      item.isExpand = false;
+      if(!item.isActive){
+        item.isExpand = false;
+      }
     });
   });
 });
@@ -49292,56 +49290,48 @@ registerAction({
       nodeList = tree.getNodeListByName(dataName);
       if (dataKey) {
         nodeList = nodeList.filter(function (item) {
-          return item.key === dataKey;
+          return item.key === dataKey
         });
       }
-    }
-    else if (dataKey) {
+    } else if (dataKey) {
       if (Array.isArray(dataKey)) {
         try {
           data.each(function (idx) {
             if (nodeList.length === dataKey.length) {
-              throw new Error('break');
+              throw new Error('break')
             }
             var key = data.getRawDataItem(idx).key;
             try {
               dataKey.forEach(function (item) {
                 if (key === item) {
                   nodeList.push(tree.getNodeByDataIndex(idx));
-                  throw new Error('break');
+                  throw new Error('break')
                 }
               });
-            }
-            catch (e) {}
+            } catch (e) {}
           });
-        }
-        catch (e) { }
-      }
-      else {
+        } catch (e) { }
+      } else {
         try {
           data.each(function (idx) {
             if (data.getRawDataItem(idx).key === dataKey) {
               nodeList.push(tree.getNodeByDataIndex(idx));
-              throw new Error('break');
+              throw new Error('break')
             }
           });
-        }
-        catch (e) { }
+        } catch (e) { }
       }
     }
     nodeList.forEach(function (node) {
       node.getAncestors(true).forEach(function (item) {
+        item.isExpand = true;
         if (!item.isActive) {
           item.isActive = true;
           var el = data.getItemGraphicEl(item.dataIndex);
           el && el.highlight();
           el && el.__edge && el.__edge.trigger('emphasis');
         }
-        if (!item.isExpand) {
-          item.isExpand = true;
-        }
       });
-      node.isActive = true;
     });
   });
 });

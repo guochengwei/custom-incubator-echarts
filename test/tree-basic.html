@@ -19,146 +19,145 @@ under the License.
 
 <html>
 <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <script src="lib/esl.js"></script>
-    <script src="lib/config.js"></script>
-    <script src="lib/jquery.min.js"></script>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <script src="lib/esl.js"></script>
+  <script src="lib/config.js"></script>
+  <script src="lib/jquery.min.js"></script>
 </head>
 <body>
 <style>
 html, body, #main {
-    width: 100%;
-    padding: 0;
-    margin: 0;
-    height: 100%;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  height: 100%;
 }
 </style>
 <div id="main"></div>
 <script>
 require([
-    'echarts'
-    // 'echarts/chart/tree',
-    // 'echarts/component/tooltip'
+  'echarts'
+  // 'echarts/chart/tree',
+  // 'echarts/component/tooltip'
 ], function (echarts) {
-    var chart = echarts.init(document.getElementById('main'))
-    
-    window.onresize = function () {
-        chart.resize()
-    }
-    
-    $.getJSON('./data/flare.json')
-    .done(function (data) {
-        
-        echarts.util.each(data.children, function (datum, index) {
-            datum.key = '1-' + index
-            datum.itemStyle = {
-                symbol: 'roundRect',
-                color: null
-            }
-            index % 2 === 0 && (datum.collapsed = true)
-        })
-        chart.setOption({
-            
-            tooltip: {
-                trigger: 'item',
-                triggerOn: 'mousemove'
-            },
-            
-            series: [
-                {
-                    type: 'tree',
-                    
-                    data: [data],
-                    
-                    top: '1%',
-                    left: '10%',
-                    bottom: '1%',
-                    right: '10%',
-                    roam: true,
-                    symbol: 'roundRect',
-                    expandSymbol: 'path://M102.4 0h819.2c56.553472 0 102.4 45.846528 102.4 102.4v819.2c0 56.553472-45.846528 102.4-102.4 102.4H102.4C45.846528 1024 0 978.153472 0 921.6V102.4C0 45.846528 45.846528 0 102.4 0z m371.2 473.6H281.6c-21.20704 0-38.4 17.19296-38.4 38.4s17.19296 38.4 38.4 38.4h192V742.4c0 21.20704 17.19296 38.4 38.4 38.4s38.4-17.19296 38.4-38.4V550.4H742.4c21.20704 0 38.4-17.19296 38.4-38.4s-17.19296-38.4-38.4-38.4H550.4V281.6c0-21.20704-17.19296-38.4-38.4-38.4s-38.4 17.19296-38.4 38.4v192z',
-                    symbolSize: 10,
-                    nodeScaleRatio: 0.2,
-                    scaleLimit: {
-                        min: 1,
-                        max: 3.5
-                    },
-                    // initialTreeDepth: -1,
-                    itemStyle: {
-                        borderColor:'#fff',
-                        borderWidth: 0.5,
-                        color: null,
-                    },
-                    label: {
-                        position: 'left',
-                        verticalAlign: 'middle',
-                        align: 'right',
-                        fontSize: 12
-                    },
-                    leaves: {
-                        label: {
-                            position: 'right',
-                            verticalAlign: 'middle',
-                            align: 'left'
-                        }
-                    },
-                    emphasis: {
-                        lineStyle: {
-                            width: 10
-                        },
-                        label: {
-                            color: '#000'
-                        },
-                        itemStyle: {
-                            borderWidth: 3.5,
-                            color: '#999'
-                        }
-                    },
-                    hoverAnimation: true,
-                    // expandAndCollapse: false,
-                    animationDuration: 300,
-                    animationDurationUpdate: 300,
-                    roamAfterExpandAndCollapse: true
-                    // roamZoomRadio:1.2
-                }
-            ]
-        })
-        echarts.registerAction({
-            type: 'treeCollapse',
-            event: 'treeCollapse',
-            update: 'update'
-        })
-        echarts.registerAction({
-            type: 'treeExpandAndCollapse',
-            event: 'treeExpandAndCollapse',
-            update: 'update'
-        })
-        echarts.registerAction({
-            type: 'treeSearchHighlight',
-            event: 'treeSearchHighlight',
-            update: 'update'
-        })
-        echarts.registerAction({
-            type: 'treeDownplay',
-            event: 'treeDownplay',
-            update: 'update'
-        })
-        chart.dispatchAction({
-            type: 'treeCollapse',
-            seriesIndex: 0
-        })
+  var chart = echarts.init(document.getElementById('main'))
 
-        
-        setTimeout(function () {
-            chart.dispatchAction({
-                type: 'treeSearchHighlight',
-                seriesIndex: 0,
-                dataKey: ['1-1', '1-2']
-            })
-        }, 1000)
-        
+  window.onresize = function () {
+    chart.resize()
+  }
+
+  $.getJSON('./data/flare.json')
+  .done(function (data) {
+
+    echarts.util.each(data.children, function (datum, index) {
+      datum.key = '1-' + index
+      datum.itemStyle = {
+        symbol: 'roundRect',
+        color: null
+      }
+      index % 2 === 0 && (datum.collapsed = true)
     })
+    chart.setOption({
+
+      tooltip: {
+        trigger: 'item',
+        triggerOn: 'mousemove'
+      },
+
+      series: [
+        {
+          type: 'tree',
+
+          data: [data],
+
+          top: '1%',
+          left: '10%',
+          bottom: '1%',
+          right: '10%',
+          roam: true,
+          symbol: 'roundRect',
+          expandSymbol: 'path://M102.4 0h819.2c56.553472 0 102.4 45.846528 102.4 102.4v819.2c0 56.553472-45.846528 102.4-102.4 102.4H102.4C45.846528 1024 0 978.153472 0 921.6V102.4C0 45.846528 45.846528 0 102.4 0z m371.2 473.6H281.6c-21.20704 0-38.4 17.19296-38.4 38.4s17.19296 38.4 38.4 38.4h192V742.4c0 21.20704 17.19296 38.4 38.4 38.4s38.4-17.19296 38.4-38.4V550.4H742.4c21.20704 0 38.4-17.19296 38.4-38.4s-17.19296-38.4-38.4-38.4H550.4V281.6c0-21.20704-17.19296-38.4-38.4-38.4s-38.4 17.19296-38.4 38.4v192z',
+          symbolSize: 10,
+          nodeScaleRatio: 0.2,
+          scaleLimit: {
+            min: 1,
+            max: 3.5
+          },
+          // initialTreeDepth: -1,
+          itemStyle: {
+            borderColor: '#fff',
+            borderWidth: 0.5,
+            color: null
+          },
+          label: {
+            position: 'left',
+            verticalAlign: 'middle',
+            align: 'right',
+            fontSize: 12
+          },
+          leaves: {
+            label: {
+              position: 'right',
+              verticalAlign: 'middle',
+              align: 'left'
+            }
+          },
+          emphasis: {
+            lineStyle: {
+              width: 10
+            },
+            label: {
+              color: '#000'
+            },
+            itemStyle: {
+              borderWidth: 3.5,
+              color: '#999'
+            }
+          },
+          hoverAnimation: true,
+          // expandAndCollapse: false,
+          animationDuration: 300,
+          animationDurationUpdate: 300,
+          roamAfterExpandAndCollapse: true
+          // roamZoomRadio:1.2
+        }
+      ]
+    })
+    echarts.registerAction({
+      type: 'treeCollapse',
+      event: 'treeCollapse',
+      update: 'update'
+    })
+    echarts.registerAction({
+      type: 'treeExpandAndCollapse',
+      event: 'treeExpandAndCollapse',
+      update: 'update'
+    })
+    echarts.registerAction({
+      type: 'treeSearchHighlight',
+      event: 'treeSearchHighlight',
+      update: 'update'
+    })
+    echarts.registerAction({
+      type: 'treeDownplay',
+      event: 'treeDownplay',
+      update: 'update'
+    })
+    chart.dispatchAction({
+      type: 'treeSearchHighlight',
+      seriesIndex: 0,
+      dataKey: ['1-1', '1-2']
+    })
+
+    setTimeout(function () {
+      chart.dispatchAction({
+        type: 'treeCollapse',
+        seriesIndex: 0
+      })
+    }, 1000)
+
+  })
 })
 </script>
 </body>
