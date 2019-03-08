@@ -80,6 +80,10 @@ export default SeriesModel.extend({
                 node.isExpand = (item && item.collapsed != null)
                                 ? !item.collapsed
                                 : node.depth <= expandTreeDepth;
+                node.isHide = item && item.hide
+                if(node.isHide){
+                  node.isExpand = false
+                }
             });
         }
         return tree.data;

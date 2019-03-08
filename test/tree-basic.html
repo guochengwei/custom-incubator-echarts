@@ -144,10 +144,15 @@ require([
       event: 'treeDownplay',
       update: 'update'
     })
+    echarts.registerAction({
+      type: 'treeClip',
+      event: 'treeClip',
+      update: 'update'
+    })
     chart.dispatchAction({
       type: 'treeSearchHighlight',
       seriesIndex: 0,
-      dataKey: ['1-1', '1-2']
+      dataKey: ['1-1', '1-2', '1-3', '1-4']
     })
 
     setTimeout(function () {
@@ -155,6 +160,20 @@ require([
         type: 'treeCollapse',
         seriesIndex: 0
       })
+      setTimeout(function () {
+        chart.dispatchAction({
+          type: 'treeClip',
+          seriesIndex: 0,
+          clip: true
+        })
+      }, 1000)
+      setTimeout(function () {
+        chart.dispatchAction({
+          type: 'treeClip',
+          seriesIndex: 0,
+          clip: false
+        })
+      }, 2000)
     }, 1000)
 
   })

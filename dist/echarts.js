@@ -48121,6 +48121,10 @@ SeriesModel.extend({
                 node.isExpand = (item && item.collapsed != null)
                                 ? !item.collapsed
                                 : node.depth <= expandTreeDepth;
+                node.isHide = item && item.hide;
+                if(node.isHide){
+                  node.isExpand = false;
+                }
             });
         }
         return tree.data;
@@ -48883,10 +48887,12 @@ extendChartView({
 
 function symbolNeedsDraw$1(data, dataIndex) {
     var layout = data.getItemLayout(dataIndex);
-
-    return layout
+    var node = data.tree.getNodeByDataIndex(dataIndex);
+  return layout
            && !isNaN(layout.x) && !isNaN(layout.y)
-           && data.getItemVisual(dataIndex, 'symbol') !== 'none';
+           && data.getItemVisual(dataIndex, 'symbol') !== 'none'
+           && !node.isHide
+           && !node.invisible;
 }
 
 function getTreeNodeStyle(node, itemModel, seriesScope) {
@@ -49196,22 +49202,26 @@ registerAction({
     var node = null;
     if (dataIndex) {
       node = tree.getNodeByDataIndex(dataIndex);
-    } else if (dataName) {
-      node = tree.getNodeListByName(dataName);
-      node = node.length === 1
-             ? node[0]
-             : node.find(function (item) {
-          return data.getRawDataItem(item.dataIndex).key === dataKey
-        });
-    } else if (dataKey) {
-      try {
-        data.each(function (idx) {
-          if (data.getRawDataItem(idx).key === dataKey) {
-            node = tree.getNodeByDataIndex(idx);
-            throw new Error('break')
-          }
-        });
-      } catch (e) { }
+    } else {
+      if (dataName) {
+        node = tree.getNodeListByName(dataName);
+        node = node.length === 1
+               ? node[0]
+               : node.find(function (item) {
+            return data.getRawDataItem(item.dataIndex).key === dataKey
+          });
+      } else {
+        if (dataKey) {
+          try {
+            data.each(function (idx) {
+              if (data.getRawDataItem(idx).key === dataKey) {
+                node = tree.getNodeByDataIndex(idx);
+                throw new Error('break')
+              }
+            });
+          } catch (e) { }
+        }
+      }
     }
     if (!node) {
       payload = null;
@@ -49253,7 +49263,22 @@ registerAction({
     var data = seriesModel.getData();
     var tree = data.tree;
     tree.root.eachNode(function (item) {
-        item.isExpand = true;
+      item.isExpand = true;
+    });
+  });
+});
+registerAction({
+  type: 'treeClip',
+  event: 'treeClip',
+  update: 'update'
+}, function (payload, ecModel) {
+  ecModel.eachComponent({ mainType: 'series', subType: 'tree', query: payload }, function (seriesModel) {
+    var data = seriesModel.getData();
+    var tree = data.tree;
+    tree.root.eachNode(function (item) {
+      if (!item.isActive) {
+        item.invisible = payload.clip;
+      }
     });
   });
 });
@@ -49266,7 +49291,7 @@ registerAction({
     var data = seriesModel.getData();
     var tree = data.tree;
     tree.root.eachNode(function (item) {
-      if(!item.isActive){
+      if (!item.isActive) {
         item.isExpand = false;
       }
     });
@@ -49306,33 +49331,35 @@ registerAction({
           return item.key === dataKey
         });
       }
-    } else if (dataKey) {
-      if (Array.isArray(dataKey)) {
-        try {
-          data.each(function (idx) {
-            if (nodeList.length === dataKey.length) {
-              throw new Error('break')
-            }
-            var key = data.getRawDataItem(idx).key;
-            try {
-              dataKey.forEach(function (item) {
-                if (key === item) {
-                  nodeList.push(tree.getNodeByDataIndex(idx));
-                  throw new Error('break')
-                }
-              });
-            } catch (e) {}
-          });
-        } catch (e) { }
-      } else {
-        try {
-          data.each(function (idx) {
-            if (data.getRawDataItem(idx).key === dataKey) {
-              nodeList.push(tree.getNodeByDataIndex(idx));
-              throw new Error('break')
-            }
-          });
-        } catch (e) { }
+    } else {
+      if (dataKey) {
+        if (Array.isArray(dataKey)) {
+          try {
+            data.each(function (idx) {
+              if (nodeList.length === dataKey.length) {
+                throw new Error('break')
+              }
+              var key = data.getRawDataItem(idx).key;
+              try {
+                dataKey.forEach(function (item) {
+                  if (key === item) {
+                    nodeList.push(tree.getNodeByDataIndex(idx));
+                    throw new Error('break')
+                  }
+                });
+              } catch (e) {}
+            });
+          } catch (e) { }
+        } else {
+          try {
+            data.each(function (idx) {
+              if (data.getRawDataItem(idx).key === dataKey) {
+                nodeList.push(tree.getNodeByDataIndex(idx));
+                throw new Error('break')
+              }
+            });
+          } catch (e) { }
+        }
       }
     }
     nodeList.forEach(function (node) {

@@ -366,10 +366,12 @@ export default echarts.extendChartView({
 
 function symbolNeedsDraw(data, dataIndex) {
     var layout = data.getItemLayout(dataIndex);
-
-    return layout
+    var node = data.tree.getNodeByDataIndex(dataIndex)
+  return layout
            && !isNaN(layout.x) && !isNaN(layout.y)
-           && data.getItemVisual(dataIndex, 'symbol') !== 'none';
+           && data.getItemVisual(dataIndex, 'symbol') !== 'none'
+           && !node.isHide
+           && !node.invisible;
 }
 
 function getTreeNodeStyle(node, itemModel, seriesScope) {
