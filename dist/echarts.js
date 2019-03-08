@@ -48891,7 +48891,6 @@ function symbolNeedsDraw$1(data, dataIndex) {
   return layout
            && !isNaN(layout.x) && !isNaN(layout.y)
            && data.getItemVisual(dataIndex, 'symbol') !== 'none'
-           && !node.isHide
            && !node.invisible;
 }
 
@@ -49276,8 +49275,12 @@ registerAction({
     var data = seriesModel.getData();
     var tree = data.tree;
     tree.root.eachNode(function (item) {
-      if (!item.isActive) {
-        item.invisible = payload.clip;
+      if (payload.clip) {
+        if(!item.isActive){
+          item.invisible = true;
+        }
+      } else {
+        item.invisible = false;
       }
     });
   });
@@ -49414,32 +49417,30 @@ registerAction({
 * under the License.
 */
 
-
 /**
  * Traverse the tree from bottom to top and do something
  * @param  {module:echarts/data/Tree~TreeNode} root  The real root of the tree
  * @param  {Function} callback
  */
-function eachAfter(root, callback, separation) {
-    var nodes = [root];
-    var next = [];
-    var node;
+function eachAfter (root, callback, separation) {
+  var nodes = [root];
+  var next = [];
+  var node;
 
-    while (node = nodes.pop()) { // jshint ignore:line
-        next.push(node);
-        if (node.isExpand) {
-            var children = node.children;
-            if (children.length) {
-                for (var i = 0; i < children.length; i++) {
-                    nodes.push(children[i]);
-                }
-            }
+  while (node = nodes.pop()) { // jshint ignore:line
+    next.push(node);
+    if (node.isExpand) {
+      var children = node.children;
+      if (children.length) {
+        for (var i = 0; i < children.length; i++) {
+          nodes.push(children[i]);
         }
+      }
     }
-
-    while (node = next.pop()) { // jshint ignore:line
-        callback(node, separation);
-    }
+  }
+  while (node = next.pop()) { // jshint ignore:line
+    callback(node, separation);
+  }
 }
 
 /**
@@ -49447,20 +49448,22 @@ function eachAfter(root, callback, separation) {
  * @param  {module:echarts/data/Tree~TreeNode} root  The real root of the tree
  * @param  {Function} callback
  */
-function eachBefore(root, callback) {
-    var nodes = [root];
-    var node;
-    while (node = nodes.pop()) { // jshint ignore:line
-        callback(node);
-        if (node.isExpand) {
-            var children = node.children;
-            if (children.length) {
-                for (var i = children.length - 1; i >= 0; i--) {
-                    nodes.push(children[i]);
-                }
-            }
-        }
+function eachBefore (root, callback) {
+  var nodes = [root];
+  var node;
+  while (node = nodes.pop()) { // jshint ignore:line
+    if (!node.isHide) {
+      callback(node);
     }
+    if (node.isExpand) {
+      var children = node.children;
+      if (children.length) {
+        for (var i = children.length - 1; i >= 0; i--) {
+          nodes.push(children[i]);
+        }
+      }
+    }
+  }
 }
 
 /*

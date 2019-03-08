@@ -370,7 +370,6 @@ function symbolNeedsDraw(data, dataIndex) {
   return layout
            && !isNaN(layout.x) && !isNaN(layout.y)
            && data.getItemVisual(dataIndex, 'symbol') !== 'none'
-           && !node.isHide
            && !node.invisible;
 }
 
