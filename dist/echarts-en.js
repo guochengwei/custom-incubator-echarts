@@ -47520,303 +47520,317 @@ function linkSingle(data, dataType, mainData, opt) {
  * @param {module:echarts/data/Tree} hostTree
  */
 var TreeNode = function (name, hostTree) {
-    /**
-     * @type {string}
-     */
-    this.name = name || '';
+  /**
+   * @type {string}
+   */
+  this.name = name || '';
 
-    /**
-     * Depth of node
-     *
-     * @type {number}
-     * @readOnly
-     */
-    this.depth = 0;
+  /**
+   * Depth of node
+   *
+   * @type {number}
+   * @readOnly
+   */
+  this.depth = 0;
 
-    /**
-     * Height of the subtree rooted at this node.
-     * @type {number}
-     * @readOnly
-     */
-    this.height = 0;
+  /**
+   * Height of the subtree rooted at this node.
+   * @type {number}
+   * @readOnly
+   */
+  this.height = 0;
 
-    /**
-     * @type {module:echarts/data/Tree~TreeNode}
-     * @readOnly
-     */
-    this.parentNode = null;
+  /**
+   * @type {module:echarts/data/Tree~TreeNode}
+   * @readOnly
+   */
+  this.parentNode = null;
 
-    /**
-     * Reference to list item.
-     * Do not persistent dataIndex outside,
-     * besause it may be changed by list.
-     * If dataIndex -1,
-     * this node is logical deleted (filtered) in list.
-     *
-     * @type {Object}
-     * @readOnly
-     */
-    this.dataIndex = -1;
+  /**
+   * Reference to list item.
+   * Do not persistent dataIndex outside,
+   * besause it may be changed by list.
+   * If dataIndex -1,
+   * this node is logical deleted (filtered) in list.
+   *
+   * @type {Object}
+   * @readOnly
+   */
+  this.dataIndex = -1;
 
-    /**
-     * @type {Array.<module:echarts/data/Tree~TreeNode>}
-     * @readOnly
-     */
-    this.children = [];
+  /**
+   * @type {Array.<module:echarts/data/Tree~TreeNode>}
+   * @readOnly
+   */
+  this.children = [];
 
-    /**
-     * @type {Array.<module:echarts/data/Tree~TreeNode>}
-     * @pubilc
-     */
-    this.viewChildren = [];
+  /**
+   * @type {Array.<module:echarts/data/Tree~TreeNode>}
+   * @pubilc
+   */
+  this.viewChildren = [];
 
-    /**
-     * @type {moduel:echarts/data/Tree}
-     * @readOnly
-     */
-    this.hostTree = hostTree;
+  /**
+   * @type {moduel:echarts/data/Tree}
+   * @readOnly
+   */
+  this.hostTree = hostTree;
+  /**
+   * loadMore
+   * @type {boolean}
+   */
+  this.expandable = false;
+  /**
+   * @type {boolean}
+   */
+  this.isExpand = false;
+  /**
+   * highlight
+   * @type {boolean}
+   */
+  this.isActive = false;
 };
 
 TreeNode.prototype = {
 
-    constructor: TreeNode,
+  constructor: TreeNode,
 
-    /**
-     * The node is removed.
-     * @return {boolean} is removed.
-     */
-    isRemoved: function () {
-        return this.dataIndex < 0;
-    },
+  /**
+   * The node is removed.
+   * @return {boolean} is removed.
+   */
+  isRemoved: function () {
+    return this.dataIndex < 0
+  },
 
-    /**
-     * Travel this subtree (include this node).
-     * Usage:
-     *    node.eachNode(function () { ... }); // preorder
-     *    node.eachNode('preorder', function () { ... }); // preorder
-     *    node.eachNode('postorder', function () { ... }); // postorder
-     *    node.eachNode(
-     *        {order: 'postorder', attr: 'viewChildren'},
-     *        function () { ... }
-     *    ); // postorder
-     *
-     * @param {(Object|string)} options If string, means order.
-     * @param {string=} options.order 'preorder' or 'postorder'
-     * @param {string=} options.attr 'children' or 'viewChildren'
-     * @param {Function} cb If in preorder and return false,
-     *                      its subtree will not be visited.
-     * @param {Object} [context]
-     */
-    eachNode: function (options, cb, context) {
-        if (typeof options === 'function') {
-            context = cb;
-            cb = options;
-            options = null;
-        }
-
-        options = options || {};
-        if (isString(options)) {
-            options = {order: options};
-        }
-
-        var order = options.order || 'preorder';
-        var children = this[options.attr || 'children'];
-
-        var suppressVisitSub;
-        order === 'preorder' && (suppressVisitSub = cb.call(context, this));
-
-        for (var i = 0; !suppressVisitSub && i < children.length; i++) {
-            children[i].eachNode(options, cb, context);
-        }
-
-        order === 'postorder' && cb.call(context, this);
-    },
-
-    /**
-     * Update depth and height of this subtree.
-     *
-     * @param  {number} depth
-     */
-    updateDepthAndHeight: function (depth) {
-        var height = 0;
-        this.depth = depth;
-        for (var i = 0; i < this.children.length; i++) {
-            var child = this.children[i];
-            child.updateDepthAndHeight(depth + 1);
-            if (child.height > height) {
-                height = child.height;
-            }
-        }
-        this.height = height + 1;
-    },
-
-    /**
-     * @param  {string} id
-     * @return {module:echarts/data/Tree~TreeNode}
-     */
-    getNodeById: function (id) {
-        if (this.getId() === id) {
-            return this;
-        }
-        for (var i = 0, children = this.children, len = children.length; i < len; i++) {
-            var res = children[i].getNodeById(id);
-            if (res) {
-                return res;
-            }
-        }
-    },
-
-    /**
-     * @param {module:echarts/data/Tree~TreeNode} node
-     * @return {boolean}
-     */
-    contains: function (node) {
-        if (node === this) {
-            return true;
-        }
-        for (var i = 0, children = this.children, len = children.length; i < len; i++) {
-            var res = children[i].contains(node);
-            if (res) {
-                return res;
-            }
-        }
-    },
-
-    /**
-     * @param {boolean} includeSelf Default false.
-     * @return {Array.<module:echarts/data/Tree~TreeNode>} order: [root, child, grandchild, ...]
-     */
-    getAncestors: function (includeSelf) {
-        var ancestors = [];
-        var node = includeSelf ? this : this.parentNode;
-        while (node) {
-            ancestors.push(node);
-            node = node.parentNode;
-        }
-        ancestors.reverse();
-        return ancestors;
-    },
-
-    /**
-     * @param {string|Array=} [dimension='value'] Default 'value'. can be 0, 1, 2, 3
-     * @return {number} Value.
-     */
-    getValue: function (dimension) {
-        var data = this.hostTree.data;
-        return data.get(data.getDimension(dimension || 'value'), this.dataIndex);
-    },
-
-    /**
-     * @param {Object} layout
-     * @param {boolean=} [merge=false]
-     */
-    setLayout: function (layout, merge$$1) {
-        this.dataIndex >= 0
-        && this.hostTree.data.setItemLayout(this.dataIndex, layout, merge$$1);
-    },
-
-    /**
-     * @return {Object} layout
-     */
-    getLayout: function () {
-        return this.hostTree.data.getItemLayout(this.dataIndex);
-    },
-
-    /**
-     * @param {string} [path]
-     * @return {module:echarts/model/Model}
-     */
-    getModel: function (path) {
-        if (this.dataIndex < 0) {
-            return;
-        }
-        var hostTree = this.hostTree;
-        var itemModel = hostTree.data.getItemModel(this.dataIndex);
-        var levelModel = this.getLevelModel();
-        var leavesModel;
-        if (!levelModel && (this.children.length === 0 || (this.children.length !== 0 && this.isExpand === false))) {
-            leavesModel = this.getLeavesModel();
-        }
-        return itemModel.getModel(path, (levelModel || leavesModel || hostTree.hostModel).getModel(path));
-    },
-
-    /**
-     * @return {module:echarts/model/Model}
-     */
-    getLevelModel: function () {
-        return (this.hostTree.levelModels || [])[this.depth];
-    },
-
-    /**
-     * @return {module:echarts/model/Model}
-     */
-    getLeavesModel: function () {
-        return this.hostTree.leavesModel;
-    },
-
-    /**
-     * @example
-     *  setItemVisual('color', color);
-     *  setItemVisual({
-     *      'color': color
-     *  });
-     */
-    setVisual: function (key, value) {
-        this.dataIndex >= 0
-        && this.hostTree.data.setItemVisual(this.dataIndex, key, value);
-    },
-
-    /**
-     * Get item visual
-     */
-    getVisual: function (key, ignoreParent) {
-        return this.hostTree.data.getItemVisual(this.dataIndex, key, ignoreParent);
-    },
-
-    /**
-     * @public
-     * @return {number}
-     */
-    getRawIndex: function () {
-        return this.hostTree.data.getRawIndex(this.dataIndex);
-    },
-
-    /**
-     * @public
-     * @return {string}
-     */
-    getId: function () {
-        return this.hostTree.data.getId(this.dataIndex);
-    },
-
-    /**
-     * if this is an ancestor of another node
-     *
-     * @public
-     * @param {TreeNode} node another node
-     * @return {boolean} if is ancestor
-     */
-    isAncestorOf: function (node) {
-        var parent = node.parentNode;
-        while (parent) {
-            if (parent === this) {
-                return true;
-            }
-            parent = parent.parentNode;
-        }
-        return false;
-    },
-
-    /**
-     * if this is an descendant of another node
-     *
-     * @public
-     * @param {TreeNode} node another node
-     * @return {boolean} if is descendant
-     */
-    isDescendantOf: function (node) {
-        return node !== this && node.isAncestorOf(this);
+  /**
+   * Travel this subtree (include this node).
+   * Usage:
+   *    node.eachNode(function () { ... }); // preorder
+   *    node.eachNode('preorder', function () { ... }); // preorder
+   *    node.eachNode('postorder', function () { ... }); // postorder
+   *    node.eachNode(
+   *        {order: 'postorder', attr: 'viewChildren'},
+   *        function () { ... }
+   *    ); // postorder
+   *
+   * @param {(Object|string)} options If string, means order.
+   * @param {string=} options.order 'preorder' or 'postorder'
+   * @param {string=} options.attr 'children' or 'viewChildren'
+   * @param {Function} cb If in preorder and return false,
+   *                      its subtree will not be visited.
+   * @param {Object} [context]
+   */
+  eachNode: function (options, cb, context) {
+    if (typeof options === 'function') {
+      context = cb;
+      cb = options;
+      options = null;
     }
+
+    options = options || {};
+    if (isString(options)) {
+      options = { order: options };
+    }
+
+    var order = options.order || 'preorder';
+    var children = this[options.attr || 'children'];
+
+    var suppressVisitSub;
+    order === 'preorder' && (suppressVisitSub = cb.call(context, this));
+
+    for (var i = 0; !suppressVisitSub && i < children.length; i++) {
+      children[i].eachNode(options, cb, context);
+    }
+
+    order === 'postorder' && cb.call(context, this);
+  },
+
+  /**
+   * Update depth and height of this subtree.
+   *
+   * @param  {number} depth
+   */
+  updateDepthAndHeight: function (depth) {
+    var height = 0;
+    this.depth = depth;
+    for (var i = 0; i < this.children.length; i++) {
+      var child = this.children[i];
+      child.updateDepthAndHeight(depth + 1);
+      if (child.height > height) {
+        height = child.height;
+      }
+    }
+    this.height = height + 1;
+  },
+
+  /**
+   * @param  {string} id
+   * @return {module:echarts/data/Tree~TreeNode}
+   */
+  getNodeById: function (id) {
+    if (this.getId() === id) {
+      return this
+    }
+    for (var i = 0, children = this.children, len = children.length; i < len; i++) {
+      var res = children[i].getNodeById(id);
+      if (res) {
+        return res
+      }
+    }
+  },
+
+  /**
+   * @param {module:echarts/data/Tree~TreeNode} node
+   * @return {boolean}
+   */
+  contains: function (node) {
+    if (node === this) {
+      return true
+    }
+    for (var i = 0, children = this.children, len = children.length; i < len; i++) {
+      var res = children[i].contains(node);
+      if (res) {
+        return res
+      }
+    }
+  },
+
+  /**
+   * @param {boolean} includeSelf Default false.
+   * @return {Array.<module:echarts/data/Tree~TreeNode>} order: [root, child, grandchild, ...]
+   */
+  getAncestors: function (includeSelf) {
+    var ancestors = [];
+    var node = includeSelf ? this : this.parentNode;
+    while (node) {
+      ancestors.push(node);
+      node = node.parentNode;
+    }
+    ancestors.reverse();
+    return ancestors
+  },
+
+  /**
+   * @param {string|Array=} [dimension='value'] Default 'value'. can be 0, 1, 2, 3
+   * @return {number} Value.
+   */
+  getValue: function (dimension) {
+    var data = this.hostTree.data;
+    return data.get(data.getDimension(dimension || 'value'), this.dataIndex)
+  },
+
+  /**
+   * @param {Object} layout
+   * @param {boolean=} [merge=false]
+   */
+  setLayout: function (layout, merge$$1) {
+    this.dataIndex >= 0
+    && this.hostTree.data.setItemLayout(this.dataIndex, layout, merge$$1);
+  },
+
+  /**
+   * @return {Object} layout
+   */
+  getLayout: function () {
+    return this.hostTree.data.getItemLayout(this.dataIndex)
+  },
+
+  /**
+   * @param {string} [path]
+   * @return {module:echarts/model/Model}
+   */
+  getModel: function (path) {
+    if (this.dataIndex < 0) {
+      return
+    }
+    var hostTree = this.hostTree;
+    var itemModel = hostTree.data.getItemModel(this.dataIndex);
+    var levelModel = this.getLevelModel();
+    var leavesModel;
+    if (!levelModel && (this.children.length === 0 || (this.children.length !== 0 && this.isExpand === false))) {
+      leavesModel = this.getLeavesModel();
+    }
+    return itemModel.getModel(path, (levelModel || leavesModel || hostTree.hostModel).getModel(path))
+  },
+
+  /**
+   * @return {module:echarts/model/Model}
+   */
+  getLevelModel: function () {
+    return (this.hostTree.levelModels || [])[this.depth]
+  },
+
+  /**
+   * @return {module:echarts/model/Model}
+   */
+  getLeavesModel: function () {
+    return this.hostTree.leavesModel
+  },
+
+  /**
+   * @example
+   *  setItemVisual('color', color);
+   *  setItemVisual({
+   *      'color': color
+   *  });
+   */
+  setVisual: function (key, value) {
+    this.dataIndex >= 0
+    && this.hostTree.data.setItemVisual(this.dataIndex, key, value);
+  },
+
+  /**
+   * Get item visual
+   */
+  getVisual: function (key, ignoreParent) {
+    return this.hostTree.data.getItemVisual(this.dataIndex, key, ignoreParent)
+  },
+
+  /**
+   * @public
+   * @return {number}
+   */
+  getRawIndex: function () {
+    return this.hostTree.data.getRawIndex(this.dataIndex)
+  },
+
+  /**
+   * @public
+   * @return {string}
+   */
+  getId: function () {
+    return this.hostTree.data.getId(this.dataIndex)
+  },
+
+  /**
+   * if this is an ancestor of another node
+   *
+   * @public
+   * @param {TreeNode} node another node
+   * @return {boolean} if is ancestor
+   */
+  isAncestorOf: function (node) {
+    var parent = node.parentNode;
+    while (parent) {
+      if (parent === this) {
+        return true
+      }
+      parent = parent.parentNode;
+    }
+    return false
+  },
+
+  /**
+   * if this is an descendant of another node
+   *
+   * @public
+   * @param {TreeNode} node another node
+   * @return {boolean} if is descendant
+   */
+  isDescendantOf: function (node) {
+    return node !== this && node.isAncestorOf(this)
+  }
 };
 
 /**
@@ -47826,132 +47840,132 @@ TreeNode.prototype = {
  * @param {Array.<Object>} levelOptions
  * @param {Object} leavesOption
  */
-function Tree(hostModel, levelOptions, leavesOption) {
-    /**
-     * @type {module:echarts/data/Tree~TreeNode}
-     * @readOnly
-     */
-    this.root;
+function Tree (hostModel, levelOptions, leavesOption) {
+  /**
+   * @type {module:echarts/data/Tree~TreeNode}
+   * @readOnly
+   */
+  this.root;
 
-    /**
-     * @type {module:echarts/data/List}
-     * @readOnly
-     */
-    this.data;
+  /**
+   * @type {module:echarts/data/List}
+   * @readOnly
+   */
+  this.data;
 
-    /**
-     * Index of each item is the same as the raw index of coresponding list item.
-     * @private
-     * @type {Array.<module:echarts/data/Tree~TreeNode}
-     */
-    this._nodes = [];
+  /**
+   * Index of each item is the same as the raw index of coresponding list item.
+   * @private
+   * @type {Array.<module:echarts/data/Tree~TreeNode}
+   */
+  this._nodes = [];
 
-    /**
-     * @private
-     * @readOnly
-     * @type {module:echarts/model/Model}
-     */
-    this.hostModel = hostModel;
+  /**
+   * @private
+   * @readOnly
+   * @type {module:echarts/model/Model}
+   */
+  this.hostModel = hostModel;
 
-    /**
-     * @private
-     * @readOnly
-     * @type {Array.<module:echarts/model/Model}
-     */
-    this.levelModels = map(levelOptions || [], function (levelDefine) {
-        return new Model(levelDefine, hostModel, hostModel.ecModel);
-    });
+  /**
+   * @private
+   * @readOnly
+   * @type {Array.<module:echarts/model/Model}
+   */
+  this.levelModels = map(levelOptions || [], function (levelDefine) {
+    return new Model(levelDefine, hostModel, hostModel.ecModel)
+  });
 
-    this.leavesModel = new Model(leavesOption || {}, hostModel, hostModel.ecModel);
+  this.leavesModel = new Model(leavesOption || {}, hostModel, hostModel.ecModel);
 }
 
 Tree.prototype = {
 
-    constructor: Tree,
+  constructor: Tree,
 
-    type: 'tree',
+  type: 'tree',
 
-    /**
-     * Travel this subtree (include this node).
-     * Usage:
-     *    node.eachNode(function () { ... }); // preorder
-     *    node.eachNode('preorder', function () { ... }); // preorder
-     *    node.eachNode('postorder', function () { ... }); // postorder
-     *    node.eachNode(
-     *        {order: 'postorder', attr: 'viewChildren'},
-     *        function () { ... }
-     *    ); // postorder
-     *
-     * @param {(Object|string)} options If string, means order.
-     * @param {string=} options.order 'preorder' or 'postorder'
-     * @param {string=} options.attr 'children' or 'viewChildren'
-     * @param {Function} cb
-     * @param {Object}   [context]
-     */
-    eachNode: function (options, cb, context) {
-        this.root.eachNode(options, cb, context);
-    },
+  /**
+   * Travel this subtree (include this node).
+   * Usage:
+   *    node.eachNode(function () { ... }); // preorder
+   *    node.eachNode('preorder', function () { ... }); // preorder
+   *    node.eachNode('postorder', function () { ... }); // postorder
+   *    node.eachNode(
+   *        {order: 'postorder', attr: 'viewChildren'},
+   *        function () { ... }
+   *    ); // postorder
+   *
+   * @param {(Object|string)} options If string, means order.
+   * @param {string=} options.order 'preorder' or 'postorder'
+   * @param {string=} options.attr 'children' or 'viewChildren'
+   * @param {Function} cb
+   * @param {Object}   [context]
+   */
+  eachNode: function (options, cb, context) {
+    this.root.eachNode(options, cb, context);
+  },
 
-    /**
-     * @param {number} dataIndex
-     * @return {module:echarts/data/Tree~TreeNode}
-     */
-    getNodeByDataIndex: function (dataIndex) {
-        var rawIndex = this.data.getRawIndex(dataIndex);
-        return this._nodes[rawIndex];
-    },
+  /**
+   * @param {number} dataIndex
+   * @return {module:echarts/data/Tree~TreeNode}
+   */
+  getNodeByDataIndex: function (dataIndex) {
+    var rawIndex = this.data.getRawIndex(dataIndex);
+    return this._nodes[rawIndex]
+  },
 
-    /**
-     * @param {string} name
-     * @return {module:echarts/data/Tree~TreeNode}
-     */
-    getNodeByName: function (name) {
-        var rawIndex = this.data.getRawIndex(this.data.indexOfName(name));
-        return this._nodes[rawIndex];
-    },
-    /**
-     * @param {string} name
-     * @return {module:echarts/data/Tree~TreeNode}
-     */
-    getNodeListByName: function (name) {
-        var arr = [];
-        this.data._nameList.forEach(function (item, idx) {
-            if (name === item) {
-                arr.push(this._nodes[idx]);
-            }
-        }.bind(this));
+  /**
+   * @param {string} name
+   * @return {module:echarts/data/Tree~TreeNode}
+   */
+  getNodeByName: function (name) {
+    var rawIndex = this.data.getRawIndex(this.data.indexOfName(name));
+    return this._nodes[rawIndex]
+  },
+  /**
+   * @param {string} name
+   * @return {module:echarts/data/Tree~TreeNode}
+   */
+  getNodeListByName: function (name) {
+    var arr = [];
+    this.data._nameList.forEach(function (item, idx) {
+      if (name === item) {
+        arr.push(this._nodes[idx]);
+      }
+    }.bind(this));
+    return arr
+    /*return this.data._nameList.reduce((arr, item, idx) => {
+        if (name === item) {
+            arr.push(this._nodes[idx]);
+        }
         return arr;
-        /*return this.data._nameList.reduce((arr, item, idx) => {
-            if (name === item) {
-                arr.push(this._nodes[idx]);
-            }
-            return arr;
-        }, []);*/
-    },
+    }, []);*/
+  },
 
-    /**
-     * Update item available by list,
-     * when list has been performed options like 'filterSelf' or 'map'.
-     */
-    update: function () {
-        var data = this.data;
-        var nodes = this._nodes;
+  /**
+   * Update item available by list,
+   * when list has been performed options like 'filterSelf' or 'map'.
+   */
+  update: function () {
+    var data = this.data;
+    var nodes = this._nodes;
 
-        for (var i = 0, len = nodes.length; i < len; i++) {
-            nodes[i].dataIndex = -1;
-        }
-
-        for (var i = 0, len = data.count(); i < len; i++) {
-            nodes[data.getRawIndex(i)].dataIndex = i;
-        }
-    },
-
-    /**
-     * Clear all layouts
-     */
-    clearLayouts: function () {
-        this.data.clearItemLayouts();
+    for (var i = 0, len = nodes.length; i < len; i++) {
+      nodes[i].dataIndex = -1;
     }
+
+    for (var i = 0, len = data.count(); i < len; i++) {
+      nodes[data.getRawIndex(i)].dataIndex = i;
+    }
+  },
+
+  /**
+   * Clear all layouts
+   */
+  clearLayouts: function () {
+    this.data.clearItemLayouts();
+  }
 };
 
 /**
@@ -47978,53 +47992,67 @@ Tree.prototype = {
  * @return module:echarts/data/Tree
  */
 Tree.createTree = function (dataRoot, hostModel, treeOptions) {
+  var tree = new Tree(hostModel, treeOptions.levels, treeOptions.leaves);
+  var listData = [];
+  var dimMax = 1;
 
-    var tree = new Tree(hostModel, treeOptions.levels, treeOptions.leaves);
-    var listData = [];
-    var dimMax = 1;
+  buildHierarchy(dataRoot);
 
-    buildHierarchy(dataRoot);
+  function buildHierarchy (dataNode, parentNode) {
+    var value = dataNode.value;
+    dimMax = Math.max(dimMax, isArray(value) ? value.length : 1);
 
-    function buildHierarchy(dataNode, parentNode) {
-        var value = dataNode.value;
-        dimMax = Math.max(dimMax, isArray(value) ? value.length : 1);
 
-        listData.push(dataNode);
+    var node = new TreeNode(dataNode.name, tree);
 
-        var node = new TreeNode(dataNode.name, tree);
-        parentNode
-        ? addChild(node, parentNode)
-        : (tree.root = node);
-
-        tree._nodes.push(node);
-
-        var children = dataNode.children;
-        if (children) {
-            for (var i = 0; i < children.length; i++) {
-                buildHierarchy(children[i], node);
-            }
-        }
+    if (dataNode.expandable) {
+      dataNode.__name = dataNode.name;
+      dataNode.name = '加载更多...';
+      node.expandable = true;
     }
+    listData.push(dataNode);
 
-    tree.root.updateDepthAndHeight(0);
+    parentNode
+    ? addChild(node, parentNode)
+    : (tree.root = node);
 
-    var dimensionsInfo = createDimensions(listData, {
-        coordDimensions: ['value'],
-        dimensionsCount: dimMax
-    });
+    tree._nodes.push(node);
 
-    var list = new List(dimensionsInfo, hostModel);
-    list.initData(listData);
+    var children = dataNode.children;
+    if (children) {
+      var length = children.filter(function (item) {
+        return !item.hide
+      }).length;
+      for (var i = 0, j = 1; i < children.length; i++) {
+        if (length !== children.length && !children[i].hide && length === j++) {
+          children[i].expandable = true;
+          buildHierarchy(children[i], node);
+        }else{
+          buildHierarchy(children[i], node);
+        }
+      }
+    }
+  }
 
-    linkList({
-        mainData: list,
-        struct: tree,
-        structAttr: 'tree'
-    });
+  tree.root.updateDepthAndHeight(0);
 
-    tree.update();
+  var dimensionsInfo = createDimensions(listData, {
+    coordDimensions: ['value'],
+    dimensionsCount: dimMax
+  });
 
-    return tree;
+  var list = new List(dimensionsInfo, hostModel);
+  list.initData(listData);
+
+  linkList({
+    mainData: list,
+    struct: tree,
+    structAttr: 'tree'
+  });
+
+  tree.update();
+
+  return tree
 };
 
 /**
@@ -48033,14 +48061,14 @@ Tree.createTree = function (dataRoot, hostModel, treeOptions) {
  *
  * @param {(module:echarts/data/Tree~TreeNode|Object)} child
  */
-function addChild(child, node) {
-    var children = node.children;
-    if (child.parentNode === node) {
-        return;
-    }
+function addChild (child, node) {
+  var children = node.children;
+  if (child.parentNode === node) {
+    return
+  }
 
-    children.push(child);
-    child.parentNode = node;
+  children.push(child);
+  child.parentNode = node;
 }
 
 /*
@@ -48335,7 +48363,12 @@ function firstWalk(node, separation) {
     var subtreeW = node.hierNode.i ? siblings[node.hierNode.i - 1] : null;
     if (children.length) {
         executeShifts(node);
-        var midPoint = (children[0].hierNode.prelim + children[children.length - 1].hierNode.prelim) / 2;
+        var length = children.length - 1;
+        var lastChild = children[length];
+        while (lastChild && lastChild.isHide) {
+          lastChild = children[--length];
+        }
+        var midPoint = (children[0].hierNode.prelim + lastChild.hierNode.prelim) / 2;
         if (subtreeW) {
             node.hierNode.prelim = subtreeW.hierNode.prelim + separation(node, subtreeW);
             node.hierNode.modifier = node.hierNode.prelim - midPoint;
@@ -48485,7 +48518,16 @@ function apportion(subtreeV, subtreeW, ancestor, separation) {
  */
 function nextRight(node) {
     var children = node.children;
-    return children.length && node.isExpand ? children[children.length - 1] : node.hierNode.thread;
+    if(children.length && node.isExpand){
+      var length = children.length - 1;
+      var lastChild = children[length];
+      while (lastChild&&lastChild.isHide) {
+        lastChild = children[--length];
+      }
+      return lastChild;
+    }else{
+      return node.hierNode.thread;
+    }
 }
 
 /**
@@ -48681,7 +48723,7 @@ extendChartView({
             var frames = animationDurationUpdate / 1000 * 60;
             var zoom = seriesModel.coordinateSystem.getZoom();
             var kx = layoutInfo.kx / 2;
-            if (!payload.child) {
+            if (!payload.hasChild) {
                 kx = -kx / 2;
             }
             if (payload.depth < 3 && layoutInfo.depth < 3) {
@@ -49235,8 +49277,30 @@ registerAction({
       node.isExpand = payload.expand;
     }
     payload.dataIndex = node.dataIndex;
-    payload.child = node.children.length > 0;
+    payload.hasChild = node.children.length > 0;
     payload.depth = node.depth;
+
+    if (node.expandable) {
+      var name = data.getRawDataItem(node.dataIndex).__name;
+      data._nameList[node.dataIndex] = name;
+      data.getRawDataItem(node.dataIndex).name = name;
+      node.expandable = false;
+      var count = 0;
+      var children = node.parentNode.children;
+      try {
+        children.forEach(function (item, index) {
+          if (item.isHide) {
+            count++;
+            item.isHide = false;
+          }
+          if (count === 10) {
+            node.expandable = true;
+            throw new Error('break')
+          }
+        });
+      } catch (e) { }
+      return
+    }
     tree.root.eachNode(function (item) {
       item.isActive = false;
       var el = data.getItemGraphicEl(item.dataIndex);
@@ -49276,7 +49340,7 @@ registerAction({
     var tree = data.tree;
     tree.root.eachNode(function (item) {
       if (payload.clip) {
-        if(!item.isActive){
+        if (!item.isActive) {
           item.invisible = true;
         }
       } else {
