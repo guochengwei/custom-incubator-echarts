@@ -71,8 +71,34 @@ echarts.registerAction({
       node.isExpand = payload.expand
     }
     payload.dataIndex = node.dataIndex
-    payload.child = node.children.length > 0
+    payload.hasChild = node.children.length > 0
     payload.depth = node.depth
+
+    if (node.expandable) {
+      var name = data.getRawDataItem(node.dataIndex).__name
+      data._nameList[node.dataIndex] = name
+      data.getRawDataItem(node.dataIndex).name = name
+      node.expandable = false
+      var count = 0
+      var targetNode = 0
+      var children = node.parentNode.children
+      try {
+        children.forEach((item, index) => {
+          if (item.isHide) {
+            count++
+            item.isHide = false
+          }
+          if (item === node) {
+            targetNode = index
+          }
+          if (count === 10) {
+            node.expandable = true
+            throw new Error('break')
+          }
+        })
+      } catch (e) { }
+      return
+    }
     tree.root.eachNode(function (item) {
       item.isActive = false
       var el = data.getItemGraphicEl(item.dataIndex)
@@ -112,7 +138,7 @@ echarts.registerAction({
     var tree = data.tree
     tree.root.eachNode(function (item) {
       if (payload.clip) {
-        if(!item.isActive){
+        if (!item.isActive) {
           item.invisible = true
         }
       } else {

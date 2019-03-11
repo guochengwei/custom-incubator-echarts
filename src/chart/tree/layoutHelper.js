@@ -88,7 +88,12 @@ export function firstWalk(node, separation) {
     var subtreeW = node.hierNode.i ? siblings[node.hierNode.i - 1] : null;
     if (children.length) {
         executeShifts(node);
-        var midPoint = (children[0].hierNode.prelim + children[children.length - 1].hierNode.prelim) / 2;
+        var length = children.length - 1
+        var lastChild = children[length]
+        while (lastChild && lastChild.isHide) {
+          lastChild = children[--length]
+        }
+        var midPoint = (children[0].hierNode.prelim + lastChild.hierNode.prelim) / 2;
         if (subtreeW) {
             node.hierNode.prelim = subtreeW.hierNode.prelim + separation(node, subtreeW);
             node.hierNode.modifier = node.hierNode.prelim - midPoint;
@@ -238,7 +243,16 @@ function apportion(subtreeV, subtreeW, ancestor, separation) {
  */
 function nextRight(node) {
     var children = node.children;
-    return children.length && node.isExpand ? children[children.length - 1] : node.hierNode.thread;
+    if(children.length && node.isExpand){
+      var length = children.length - 1
+      var lastChild = children[length]
+      while (lastChild&&lastChild.isHide) {
+        lastChild = children[--length]
+      }
+      return lastChild;
+    }else{
+      return node.hierNode.thread;
+    }
 }
 
 /**

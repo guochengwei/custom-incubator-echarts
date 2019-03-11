@@ -160,7 +160,7 @@ export default echarts.extendChartView({
             var frames = animationDurationUpdate / 1000 * 60;
             var zoom = seriesModel.coordinateSystem.getZoom();
             var kx = layoutInfo.kx / 2;
-            if (!payload.child) {
+            if (!payload.hasChild) {
                 kx = -kx / 2;
             }
             if (payload.depth < 3 && layoutInfo.depth < 3) {
