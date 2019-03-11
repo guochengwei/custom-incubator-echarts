@@ -68,7 +68,12 @@ export default SeriesModel.extend({
         var expandAndCollapse = option.expandAndCollapse;
         if (expandAndCollapse === 'forceExpand') {
             tree.root.eachNode('preorder', function (node) {
-                node.isExpand = true;
+              var item = node.hostTree.data.getRawDataItem(node.dataIndex);
+              node.isExpand = true;
+              node.isHide = item && item.hide
+              if (node.isHide) {
+                node.isExpand = false
+              }
             });
         }
         else {
