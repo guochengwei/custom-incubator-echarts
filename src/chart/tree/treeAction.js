@@ -83,7 +83,7 @@ echarts.registerAction({
       var targetNode = 0
       var children = node.parentNode.children
       try {
-        children.forEach((item, index) => {
+        children.forEach(function (item, index) {
           if (item.isHide) {
             count++
             item.isHide = false
