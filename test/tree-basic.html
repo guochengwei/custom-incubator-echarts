@@ -56,16 +56,16 @@ require([
         symbol: 'roundRect',
         color: null
       }
-      var flag = false
       datum.children.forEach((item, i) => {
         if (i > 8) {
-          flag = true
           item.hide = true
         }
       })
-      // if (flag) {
-      //   datum.children.push({ name: '...', value: 11 })
-      // }
+    })
+    data.children.forEach((item, i) => {
+      if (i > 8) {
+        item.hide = true
+      }
     })
     chart.setOption({
 

@@ -48002,7 +48002,6 @@ Tree.createTree = function (dataRoot, hostModel, treeOptions) {
     var value = dataNode.value;
     dimMax = Math.max(dimMax, isArray(value) ? value.length : 1);
 
-
     var node = new TreeNode(dataNode.name, tree);
 
     if (dataNode.expandable) {
@@ -48025,11 +48024,10 @@ Tree.createTree = function (dataRoot, hostModel, treeOptions) {
       }).length;
       for (var i = 0, j = 1; i < children.length; i++) {
         if (length !== children.length && !children[i].hide && length === j++) {
+          children[i].collapsed = true;
           children[i].expandable = true;
-          buildHierarchy(children[i], node);
-        }else{
-          buildHierarchy(children[i], node);
         }
+        buildHierarchy(children[i], node);
       }
     }
   }
@@ -49286,10 +49284,11 @@ registerAction({
     payload.depth = node.depth;
 
     if (node.expandable) {
+      node.isExpand = false;
+      node.expandable = false;
       var name = data.getRawDataItem(node.dataIndex).__name;
       data._nameList[node.dataIndex] = name;
       data.getRawDataItem(node.dataIndex).name = name;
-      node.expandable = false;
       var count = 0;
       var children = node.parentNode.children;
       try {

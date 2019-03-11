@@ -517,7 +517,6 @@ Tree.createTree = function (dataRoot, hostModel, treeOptions) {
     var value = dataNode.value
     dimMax = Math.max(dimMax, zrUtil.isArray(value) ? value.length : 1)
 
-
     var node = new TreeNode(dataNode.name, tree)
 
     if (dataNode.expandable) {
@@ -540,11 +539,10 @@ Tree.createTree = function (dataRoot, hostModel, treeOptions) {
       }).length
       for (var i = 0, j = 1; i < children.length; i++) {
         if (length !== children.length && !children[i].hide && length === j++) {
+          children[i].collapsed = true
           children[i].expandable = true
-          buildHierarchy(children[i], node)
-        }else{
-          buildHierarchy(children[i], node)
         }
+        buildHierarchy(children[i], node)
       }
     }
   }

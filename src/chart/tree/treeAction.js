@@ -75,10 +75,11 @@ echarts.registerAction({
     payload.depth = node.depth
 
     if (node.expandable) {
+      node.isExpand = false
+      node.expandable = false
       var name = data.getRawDataItem(node.dataIndex).__name
       data._nameList[node.dataIndex] = name
       data.getRawDataItem(node.dataIndex).name = name
-      node.expandable = false
       var count = 0
       var targetNode = 0
       var children = node.parentNode.children
