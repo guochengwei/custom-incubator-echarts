@@ -52,12 +52,13 @@ export default SeriesModel.extend({
 
         treeOption.leaves = leaves;
 
-        var tree = Tree.createTree(root, this, treeOption);
+        var hideNodeCount = 8
+
+        var tree = Tree.createTree(root, this, treeOption, hideNodeCount);
 
         var treeDepth = 0;
 
         var treeWidth = {};
-
         tree.eachNode('preorder', function (node) {
             treeWidth[node.depth] || (treeWidth[node.depth] = 0);
             treeWidth[node.depth] += node.children.length;
@@ -65,33 +66,23 @@ export default SeriesModel.extend({
                 treeDepth = node.depth;
             }
         });
-        var expandAndCollapse = option.expandAndCollapse;
-        if (expandAndCollapse === 'forceExpand') {
-            tree.root.eachNode('preorder', function (node) {
-              var item = node.hostTree.data.getRawDataItem(node.dataIndex);
-              node.isExpand = true;
-              node.isHide = item && item.hide
-              if (node.isHide) {
-                node.isExpand = false
-              }
-            });
-        }
-        else {
-            var expandTreeDepth = (expandAndCollapse && option.initialTreeDepth >= 0)
-                                  ? option.initialTreeDepth : treeDepth;
-            tree.root.eachNode('preorder', function (node) {
-                var item = node.hostTree.data.getRawDataItem(node.dataIndex);
-                // Add item.collapsed != null, because users can collapse node original in the series.data.
-                node.isExpand = (item && item.collapsed != null)
-                                ? !item.collapsed
-                                : node.depth <= expandTreeDepth;
-                node.isHide = item && item.hide
-                if(node.isHide){
-                  node.isExpand = false
-                }
-            });
-        }
-        return tree.data;
+      tree.treeDepth = treeDepth
+      tree.treeWidth = treeWidth
+
+      var expandAndCollapse = option.expandAndCollapse;
+      var expandTreeDepth = (expandAndCollapse && option.initialTreeDepth >= 0)
+                            ? option.initialTreeDepth : treeDepth;
+      tree.root.eachNode('preorder', function (node) {
+          var item = node.hostTree.data.getRawDataItem(node.dataIndex);
+          // Add item.collapsed != null, because users can collapse node original in the series.data.
+          node.isExpand = (item && item.collapsed != null)
+                          ? !item.collapsed
+                          : node.depth <= expandTreeDepth;
+          if(node.isHide || node.expandable){
+            node.isExpand = false
+          }
+      });
+      return tree.data;
     },
 
     /**

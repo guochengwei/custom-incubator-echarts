@@ -96,6 +96,11 @@ var TreeNode = function (name, hostTree) {
    */
   this.expandable = false
   /**
+   * loadMore
+   * @type {boolean}
+   */
+  this.isHide = false
+  /**
    * @type {boolean}
    */
   this.isExpand = false
@@ -392,6 +397,8 @@ function Tree (hostModel, levelOptions, leavesOption) {
   })
 
   this.leavesModel = new Model(leavesOption || {}, hostModel, hostModel.ecModel)
+  this.treeDepth = 0
+  this.treeWidth = {}
 }
 
 Tree.prototype = {
@@ -506,7 +513,7 @@ Tree.prototype = {
  * @param {Array.<Object>} treeOptions.leaves
  * @return module:echarts/data/Tree
  */
-Tree.createTree = function (dataRoot, hostModel, treeOptions) {
+Tree.createTree = function (dataRoot, hostModel, treeOptions, hideNodeCount) {
   var tree = new Tree(hostModel, treeOptions.levels, treeOptions.leaves)
   var listData = []
   var dimMax = 1
@@ -518,10 +525,10 @@ Tree.createTree = function (dataRoot, hostModel, treeOptions) {
     dimMax = Math.max(dimMax, zrUtil.isArray(value) ? value.length : 1)
 
     var node = new TreeNode(dataNode.name, tree)
-
+    node.isHide = dataNode.isHide
     if (dataNode.expandable) {
       dataNode.__name = dataNode.name
-      dataNode.name = '加载更多...'
+      dataNode.name = '加载更多'
       node.expandable = true
     }
     listData.push(dataNode)
@@ -534,13 +541,12 @@ Tree.createTree = function (dataRoot, hostModel, treeOptions) {
 
     var children = dataNode.children
     if (children) {
-      var length = children.filter(function (item) {
-        return !item.hide
-      }).length
-      for (var i = 0, j = 1; i < children.length; i++) {
-        if (length !== children.length && !children[i].hide && length === j++) {
-          children[i].collapsed = true
+      for (var i = 0; i < children.length; i++) {
+        if (i === hideNodeCount) {
           children[i].expandable = true
+        }
+        if (i > hideNodeCount) {
+          children[i].isHide = true
         }
         buildHierarchy(children[i], node)
       }

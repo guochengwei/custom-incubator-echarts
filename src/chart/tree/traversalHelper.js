@@ -29,7 +29,7 @@ function eachAfter (root, callback, separation) {
 
   while (node = nodes.pop()) { // jshint ignore:line
     next.push(node)
-    if (node.isExpand) {
+    if (node.isExpand && !node.isHide && !node.expandable) {
       var children = node.children
       if (children.length) {
         for (var i = 0; i < children.length; i++) {
@@ -55,7 +55,7 @@ function eachBefore (root, callback) {
     if (!node.isHide) {
       callback(node)
     }
-    if (node.isExpand) {
+    if (node.isExpand && !node.isHide && !node.expandable) {
       var children = node.children
       if (children.length) {
         for (var i = children.length - 1; i >= 0; i--) {

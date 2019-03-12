@@ -57,7 +57,7 @@ require([
         color: null
       }
       datum.children.forEach((item, i) => {
-        if (i > 8) {
+        if (i > 4) {
           item.hide = true
         }
       })
@@ -125,7 +125,7 @@ require([
             }
           },
           hoverAnimation: true,
-          // expandAndCollapse: false,
+          expandAndCollapse: true,
           animationDuration: 300,
           animationDurationUpdate: 300,
           roamAfterExpandAndCollapse: true
@@ -158,32 +158,47 @@ require([
       event: 'treeClip',
       update: 'update'
     })
-    /* chart.dispatchAction({
-       type: 'treeSearchHighlight',
-       seriesIndex: 0,
-       dataKey: ['1-1', '1-2', '1-3', '1-4']
-     })
+    echarts.registerAction({
+      type: 'treeExpand',
+      event: 'treeExpand',
+      update: 'update'
+    })
 
-     setTimeout(function () {
-       chart.dispatchAction({
-         type: 'treeCollapse',
-         seriesIndex: 0
-       })
-       setTimeout(function () {
-         chart.dispatchAction({
-           type: 'treeClip',
-           seriesIndex: 0,
-           clip: true
-         })
-       }, 1000)
-       setTimeout(function () {
-         chart.dispatchAction({
-           type: 'treeClip',
-           seriesIndex: 0,
-           clip: false
-         })
-       }, 2000)
-     }, 1000)*/
+    setTimeout(() => {
+      chart.dispatchAction({
+        type: 'treeExpand'
+      })
+    }, 5000)
+    chart.dispatchAction({
+      type: 'treeSearchHighlight',
+      seriesIndex: 0,
+      dataKey: ['1-1', '1-2', '1-3', '1-4']
+    })
+
+    setTimeout(function () {
+      chart.dispatchAction({
+        type: 'treeCollapse',
+        highlight: true
+      })
+      setTimeout(function () {
+        chart.dispatchAction({
+          type: 'treeClip',
+          clip: true
+        })
+        setTimeout(function () {
+          chart.dispatchAction({
+            type: 'treeClip',
+            clip: false
+          })
+          setTimeout(function () {
+            chart.dispatchAction({
+              type: 'treeCollapse',
+              highlight: false
+            })
+          }, 1000)
+        }, 1000)
+      }, 1000)
+    }, 1000)
 
   })
 })

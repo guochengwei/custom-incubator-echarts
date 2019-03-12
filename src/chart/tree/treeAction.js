@@ -37,45 +37,32 @@ echarts.registerAction({
     var node = null
     if (dataIndex) {
       node = tree.getNodeByDataIndex(dataIndex)
-    } else {
-      if (dataName) {
-        node = tree.getNodeListByName(dataName)
-        node = node.length === 1
-               ? node[0]
-               : node.find(function (item) {
-            return data.getRawDataItem(item.dataIndex).key === dataKey
-          })
-      } else {
-        if (dataKey) {
-          try {
-            data.each(function (idx) {
-              if (data.getRawDataItem(idx).key === dataKey) {
-                node = tree.getNodeByDataIndex(idx)
-                throw new Error('break')
-              }
-            })
-          } catch (e) { }
-        }
-      }
+    } else if (dataName) {
+      node = tree.getNodeListByName(dataName)
+      node = node.length === 1
+             ? node[0]
+             : node.find(function (item) {
+          return data.getRawDataItem(item.dataIndex).key === dataKey
+        })
+    } else if (dataKey) {
+      try {
+        data.each(function (idx) {
+          if (data.getRawDataItem(idx).key === dataKey) {
+            node = tree.getNodeByDataIndex(idx)
+            throw new Error('break')
+          }
+        })
+      } catch (e) { }
     }
-    if (!node) {
+    if (!node) {//can't find node
       payload = null
       return
-    }
-    if (node.isExpand && node.isActive) {
-      node.isExpand = false
-    } else {
-      node.isExpand = true
-    }
-    if (payload.expand !== undefined) {
-      node.isExpand = payload.expand
     }
     payload.dataIndex = node.dataIndex
     payload.hasChild = node.children.length > 0
     payload.depth = node.depth
-
+    // expandable
     if (node.expandable) {
-      node.isExpand = false
       node.expandable = false
       var name = data.getRawDataItem(node.dataIndex).__name
       data._nameList[node.dataIndex] = name
@@ -92,14 +79,23 @@ echarts.registerAction({
           if (item === node) {
             targetNode = index
           }
-          if (count === 10) {
-            node.expandable = true
+          if (count === 4) {
+            item.expandable = true
+            data.getRawDataItem(item.dataIndex).__name = item.name
+            data._nameList[item.dataIndex] = '加载更多'
             throw new Error('break')
           }
         })
       } catch (e) { }
       return
     }
+
+    node.isExpand = !(node.isExpand && node.isActive)
+
+    if (payload.expand !== undefined) {
+      node.isExpand = payload.expand
+    }
+
     tree.root.eachNode(function (item) {
       item.isActive = false
       var el = data.getItemGraphicEl(item.dataIndex)
@@ -156,13 +152,27 @@ echarts.registerAction({
   ecModel.eachComponent({ mainType: 'series', subType: 'tree', query: payload }, function (seriesModel) {
     var data = seriesModel.getData()
     var tree = data.tree
-    tree.root.eachNode(function (item) {
-      if (!item.isActive) {
-        item.isExpand = false
-      }
-    })
+    var initialTreeDepth = seriesModel.get('initialTreeDepth')
+    if (payload.highlight) {
+      tree.root.eachNode(function (node) {
+        if (!node.isActive) {
+          node.isExpand = false
+        }
+      })
+    } else {
+      tree.root.eachNode(function (node) {
+        var item = node.hostTree.data.getRawDataItem(node.dataIndex)
+        node.isExpand = (item && item.collapsed != null)
+                        ? !item.collapsed
+                        : node.depth <= initialTreeDepth
+        if (node.isHide || node.expandable) {
+          node.isExpand = false
+        }
+      })
+    }
   })
 })
+
 echarts.registerAction({
   type: 'treeDownplay',
   event: 'treeDownplay',
@@ -197,35 +207,26 @@ echarts.registerAction({
           return item.key === dataKey
         })
       }
-    } else {
-      if (dataKey) {
-        if (Array.isArray(dataKey)) {
-          try {
-            data.each(function (idx) {
-              if (nodeList.length === dataKey.length) {
-                throw new Error('break')
-              }
-              var key = data.getRawDataItem(idx).key
-              try {
-                dataKey.forEach(function (item) {
-                  if (key === item) {
-                    nodeList.push(tree.getNodeByDataIndex(idx))
-                    throw new Error('break')
-                  }
-                })
-              } catch (e) {}
-            })
-          } catch (e) { }
-        } else {
-          try {
-            data.each(function (idx) {
-              if (data.getRawDataItem(idx).key === dataKey) {
-                nodeList.push(tree.getNodeByDataIndex(idx))
-                throw new Error('break')
-              }
-            })
-          } catch (e) { }
-        }
+    } else if (dataKey) {
+      if (Array.isArray(dataKey)) {
+        try {
+          data.each(function (idx) {
+            if (nodeList.length === dataKey.length) {
+              throw new Error('break')
+            }
+            var key = data.getRawDataItem(idx).key
+            dataKey.indexOf(key) !== -1 && nodeList.push(tree.getNodeByDataIndex(idx))
+          })
+        } catch (e) { }
+      } else {
+        try {
+          data.each(function (idx) {
+            if (data.getRawDataItem(idx).key === dataKey) {
+              nodeList.push(tree.getNodeByDataIndex(idx))
+              throw new Error('break')
+            }
+          })
+        } catch (e) { }
       }
     }
     nodeList.forEach(function (node) {

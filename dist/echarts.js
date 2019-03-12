@@ -47581,6 +47581,11 @@ var TreeNode = function (name, hostTree) {
    */
   this.expandable = false;
   /**
+   * loadMore
+   * @type {boolean}
+   */
+  this.isHide = false;
+  /**
    * @type {boolean}
    */
   this.isExpand = false;
@@ -47877,6 +47882,8 @@ function Tree (hostModel, levelOptions, leavesOption) {
   });
 
   this.leavesModel = new Model(leavesOption || {}, hostModel, hostModel.ecModel);
+  this.treeDepth = 0;
+  this.treeWidth = {};
 }
 
 Tree.prototype = {
@@ -47991,7 +47998,7 @@ Tree.prototype = {
  * @param {Array.<Object>} treeOptions.leaves
  * @return module:echarts/data/Tree
  */
-Tree.createTree = function (dataRoot, hostModel, treeOptions) {
+Tree.createTree = function (dataRoot, hostModel, treeOptions, hideNodeCount) {
   var tree = new Tree(hostModel, treeOptions.levels, treeOptions.leaves);
   var listData = [];
   var dimMax = 1;
@@ -48003,10 +48010,10 @@ Tree.createTree = function (dataRoot, hostModel, treeOptions) {
     dimMax = Math.max(dimMax, isArray(value) ? value.length : 1);
 
     var node = new TreeNode(dataNode.name, tree);
-
+    node.isHide = dataNode.isHide;
     if (dataNode.expandable) {
       dataNode.__name = dataNode.name;
-      dataNode.name = '加载更多...';
+      dataNode.name = '加载更多';
       node.expandable = true;
     }
     listData.push(dataNode);
@@ -48019,13 +48026,12 @@ Tree.createTree = function (dataRoot, hostModel, treeOptions) {
 
     var children = dataNode.children;
     if (children) {
-      var length = children.filter(function (item) {
-        return !item.hide
-      }).length;
-      for (var i = 0, j = 1; i < children.length; i++) {
-        if (length !== children.length && !children[i].hide && length === j++) {
-          children[i].collapsed = true;
+      for (var i = 0; i < children.length; i++) {
+        if (i === hideNodeCount) {
           children[i].expandable = true;
+        }
+        if (i > hideNodeCount) {
+          children[i].isHide = true;
         }
         buildHierarchy(children[i], node);
       }
@@ -48119,12 +48125,13 @@ SeriesModel.extend({
 
         treeOption.leaves = leaves;
 
-        var tree = Tree.createTree(root, this, treeOption);
+        var hideNodeCount = 8;
+
+        var tree = Tree.createTree(root, this, treeOption, hideNodeCount);
 
         var treeDepth = 0;
 
         var treeWidth = {};
-
         tree.eachNode('preorder', function (node) {
             treeWidth[node.depth] || (treeWidth[node.depth] = 0);
             treeWidth[node.depth] += node.children.length;
@@ -48132,33 +48139,23 @@ SeriesModel.extend({
                 treeDepth = node.depth;
             }
         });
-        var expandAndCollapse = option.expandAndCollapse;
-        if (expandAndCollapse === 'forceExpand') {
-            tree.root.eachNode('preorder', function (node) {
-              var item = node.hostTree.data.getRawDataItem(node.dataIndex);
-              node.isExpand = true;
-              node.isHide = item && item.hide;
-              if (node.isHide) {
-                node.isExpand = false;
-              }
-            });
-        }
-        else {
-            var expandTreeDepth = (expandAndCollapse && option.initialTreeDepth >= 0)
-                                  ? option.initialTreeDepth : treeDepth;
-            tree.root.eachNode('preorder', function (node) {
-                var item = node.hostTree.data.getRawDataItem(node.dataIndex);
-                // Add item.collapsed != null, because users can collapse node original in the series.data.
-                node.isExpand = (item && item.collapsed != null)
-                                ? !item.collapsed
-                                : node.depth <= expandTreeDepth;
-                node.isHide = item && item.hide;
-                if(node.isHide){
-                  node.isExpand = false;
-                }
-            });
-        }
-        return tree.data;
+      tree.treeDepth = treeDepth;
+      tree.treeWidth = treeWidth;
+
+      var expandAndCollapse = option.expandAndCollapse;
+      var expandTreeDepth = (expandAndCollapse && option.initialTreeDepth >= 0)
+                            ? option.initialTreeDepth : treeDepth;
+      tree.root.eachNode('preorder', function (node) {
+          var item = node.hostTree.data.getRawDataItem(node.dataIndex);
+          // Add item.collapsed != null, because users can collapse node original in the series.data.
+          node.isExpand = (item && item.collapsed != null)
+                          ? !item.collapsed
+                          : node.depth <= expandTreeDepth;
+          if(node.isHide || node.expandable){
+            node.isExpand = false;
+          }
+      });
+      return tree.data;
     },
 
     /**
@@ -48332,7 +48329,7 @@ function init$2(root) {
 
     while (node = nodes.pop()) { // jshint ignore:line
         children = node.children;
-        if (node.isExpand && children.length) {
+        if (children.length && node.isExpand) {
             var n = children.length;
             for (var i = n - 1; i >= 0; i--) {
                 var child = children[i];
@@ -48361,7 +48358,7 @@ function init$2(root) {
  * @param {Function} separation
  */
 function firstWalk(node, separation) {
-    var children = node.isExpand ? node.children : [];
+    var children = node.isExpand && !node.isHide && !node.expandable ? node.children : [];
     var siblings = node.parentNode.children;
     var subtreeW = node.hierNode.i ? siblings[node.hierNode.i - 1] : null;
     if (children.length) {
@@ -48520,8 +48517,8 @@ function apportion(subtreeV, subtreeW, ancestor, separation) {
  * @return {module:echarts/data/Tree~TreeNode}
  */
 function nextRight(node) {
-    var children = node.children;
-    if(children.length && node.isExpand){
+  var children = node.children;
+    if(children.length && node.isExpand && !node.isHide && !node.expandable){
       var length = children.length - 1;
       var lastChild = children[length];
       while (lastChild&&lastChild.isHide) {
@@ -48542,7 +48539,7 @@ function nextRight(node) {
  */
 function nextLeft(node) {
     var children = node.children;
-    return children.length && node.isExpand ? children[0] : node.hierNode.thread;
+    return children.length && node.isExpand && !node.isHide && !node.expandable ? children[0] : node.hierNode.thread;
 }
 
 /**
@@ -49246,45 +49243,32 @@ registerAction({
     var node = null;
     if (dataIndex) {
       node = tree.getNodeByDataIndex(dataIndex);
-    } else {
-      if (dataName) {
-        node = tree.getNodeListByName(dataName);
-        node = node.length === 1
-               ? node[0]
-               : node.find(function (item) {
-            return data.getRawDataItem(item.dataIndex).key === dataKey
-          });
-      } else {
-        if (dataKey) {
-          try {
-            data.each(function (idx) {
-              if (data.getRawDataItem(idx).key === dataKey) {
-                node = tree.getNodeByDataIndex(idx);
-                throw new Error('break')
-              }
-            });
-          } catch (e) { }
-        }
-      }
+    } else if (dataName) {
+      node = tree.getNodeListByName(dataName);
+      node = node.length === 1
+             ? node[0]
+             : node.find(function (item) {
+          return data.getRawDataItem(item.dataIndex).key === dataKey
+        });
+    } else if (dataKey) {
+      try {
+        data.each(function (idx) {
+          if (data.getRawDataItem(idx).key === dataKey) {
+            node = tree.getNodeByDataIndex(idx);
+            throw new Error('break')
+          }
+        });
+      } catch (e) { }
     }
-    if (!node) {
+    if (!node) {//can't find node
       payload = null;
       return
-    }
-    if (node.isExpand && node.isActive) {
-      node.isExpand = false;
-    } else {
-      node.isExpand = true;
-    }
-    if (payload.expand !== undefined) {
-      node.isExpand = payload.expand;
     }
     payload.dataIndex = node.dataIndex;
     payload.hasChild = node.children.length > 0;
     payload.depth = node.depth;
-
+    // expandable
     if (node.expandable) {
-      node.isExpand = false;
       node.expandable = false;
       var name = data.getRawDataItem(node.dataIndex).__name;
       data._nameList[node.dataIndex] = name;
@@ -49297,14 +49281,23 @@ registerAction({
             count++;
             item.isHide = false;
           }
-          if (count === 10) {
-            node.expandable = true;
+          if (count === 4) {
+            item.expandable = true;
+            data.getRawDataItem(item.dataIndex).__name = item.name;
+            data._nameList[item.dataIndex] = '加载更多';
             throw new Error('break')
           }
         });
       } catch (e) { }
       return
     }
+
+    node.isExpand = !(node.isExpand && node.isActive);
+
+    if (payload.expand !== undefined) {
+      node.isExpand = payload.expand;
+    }
+
     tree.root.eachNode(function (item) {
       item.isActive = false;
       var el = data.getItemGraphicEl(item.dataIndex);
@@ -49361,13 +49354,27 @@ registerAction({
   ecModel.eachComponent({ mainType: 'series', subType: 'tree', query: payload }, function (seriesModel) {
     var data = seriesModel.getData();
     var tree = data.tree;
-    tree.root.eachNode(function (item) {
-      if (!item.isActive) {
-        item.isExpand = false;
-      }
-    });
+    var initialTreeDepth = seriesModel.get('initialTreeDepth');
+    if (payload.highlight) {
+      tree.root.eachNode(function (node) {
+        if (!node.isActive) {
+          node.isExpand = false;
+        }
+      });
+    } else {
+      tree.root.eachNode(function (node) {
+        var item = node.hostTree.data.getRawDataItem(node.dataIndex);
+        node.isExpand = (item && item.collapsed != null)
+                        ? !item.collapsed
+                        : node.depth <= initialTreeDepth;
+        if (node.isHide || node.expandable) {
+          node.isExpand = false;
+        }
+      });
+    }
   });
 });
+
 registerAction({
   type: 'treeDownplay',
   event: 'treeDownplay',
@@ -49402,35 +49409,26 @@ registerAction({
           return item.key === dataKey
         });
       }
-    } else {
-      if (dataKey) {
-        if (Array.isArray(dataKey)) {
-          try {
-            data.each(function (idx) {
-              if (nodeList.length === dataKey.length) {
-                throw new Error('break')
-              }
-              var key = data.getRawDataItem(idx).key;
-              try {
-                dataKey.forEach(function (item) {
-                  if (key === item) {
-                    nodeList.push(tree.getNodeByDataIndex(idx));
-                    throw new Error('break')
-                  }
-                });
-              } catch (e) {}
-            });
-          } catch (e) { }
-        } else {
-          try {
-            data.each(function (idx) {
-              if (data.getRawDataItem(idx).key === dataKey) {
-                nodeList.push(tree.getNodeByDataIndex(idx));
-                throw new Error('break')
-              }
-            });
-          } catch (e) { }
-        }
+    } else if (dataKey) {
+      if (Array.isArray(dataKey)) {
+        try {
+          data.each(function (idx) {
+            if (nodeList.length === dataKey.length) {
+              throw new Error('break')
+            }
+            var key = data.getRawDataItem(idx).key;
+            dataKey.indexOf(key) !== -1 && nodeList.push(tree.getNodeByDataIndex(idx));
+          });
+        } catch (e) { }
+      } else {
+        try {
+          data.each(function (idx) {
+            if (data.getRawDataItem(idx).key === dataKey) {
+              nodeList.push(tree.getNodeByDataIndex(idx));
+              throw new Error('break')
+            }
+          });
+        } catch (e) { }
       }
     }
     nodeList.forEach(function (node) {
@@ -49497,7 +49495,7 @@ function eachAfter (root, callback, separation) {
 
   while (node = nodes.pop()) { // jshint ignore:line
     next.push(node);
-    if (node.isExpand) {
+    if (node.isExpand && !node.isHide && !node.expandable) {
       var children = node.children;
       if (children.length) {
         for (var i = 0; i < children.length; i++) {
@@ -49523,7 +49521,7 @@ function eachBefore (root, callback) {
     if (!node.isHide) {
       callback(node);
     }
-    if (node.isExpand) {
+    if (node.isExpand && !node.isHide && !node.expandable) {
       var children = node.children;
       if (children.length) {
         for (var i = children.length - 1; i >= 0; i--) {

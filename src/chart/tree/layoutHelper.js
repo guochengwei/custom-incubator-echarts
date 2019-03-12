@@ -54,7 +54,7 @@ export function init(root) {
 
     while (node = nodes.pop()) { // jshint ignore:line
         children = node.children;
-        if (node.isExpand && children.length) {
+        if (children.length && node.isExpand) {
             var n = children.length;
             for (var i = n - 1; i >= 0; i--) {
                 var child = children[i];
@@ -83,7 +83,7 @@ export function init(root) {
  * @param {Function} separation
  */
 export function firstWalk(node, separation) {
-    var children = node.isExpand ? node.children : [];
+    var children = node.isExpand && !node.isHide && !node.expandable ? node.children : [];
     var siblings = node.parentNode.children;
     var subtreeW = node.hierNode.i ? siblings[node.hierNode.i - 1] : null;
     if (children.length) {
@@ -242,8 +242,8 @@ function apportion(subtreeV, subtreeW, ancestor, separation) {
  * @return {module:echarts/data/Tree~TreeNode}
  */
 function nextRight(node) {
-    var children = node.children;
-    if(children.length && node.isExpand){
+  var children = node.children;
+    if(children.length && node.isExpand && !node.isHide && !node.expandable){
       var length = children.length - 1
       var lastChild = children[length]
       while (lastChild&&lastChild.isHide) {
@@ -264,7 +264,7 @@ function nextRight(node) {
  */
 function nextLeft(node) {
     var children = node.children;
-    return children.length && node.isExpand ? children[0] : node.hierNode.thread;
+    return children.length && node.isExpand && !node.isHide && !node.expandable ? children[0] : node.hierNode.thread;
 }
 
 /**
