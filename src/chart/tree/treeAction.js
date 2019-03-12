@@ -64,9 +64,12 @@ echarts.registerAction({
     // expandable
     if (node.expandable) {
       node.expandable = false
-      var name = data.getRawDataItem(node.dataIndex).__name
-      data._nameList[node.dataIndex] = name
-      data.getRawDataItem(node.dataIndex).name = name
+      // replace name
+      var oldDataNode = data.getRawDataItem(node.dataIndex)
+      data._nameList[node.dataIndex] = oldDataNode.__name
+      oldDataNode.name = oldDataNode.__name
+      node.name = oldDataNode.__name
+
       var count = 0
       var targetNode = 0
       var children = node.parentNode.children
@@ -81,8 +84,13 @@ echarts.registerAction({
           }
           if (count === 4) {
             item.expandable = true
-            data.getRawDataItem(item.dataIndex).__name = item.name
+            // replace name
+            var newDataNode = data.getRawDataItem(item.dataIndex)
+            newDataNode.__name = item.name
+            newDataNode.name = '加载更多'
             data._nameList[item.dataIndex] = '加载更多'
+            item.name = '加载更多'
+
             throw new Error('break')
           }
         })
