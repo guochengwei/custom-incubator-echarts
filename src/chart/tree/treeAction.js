@@ -165,6 +165,9 @@ echarts.registerAction({
         node.isExpand = (item && item.collapsed != null)
                         ? !item.collapsed
                         : node.depth <= initialTreeDepth
+        if (node.isActive) {
+          node.isExpand = true
+        }
         if (node.isHide || node.expandable) {
           node.isExpand = false
         }
