@@ -52,7 +52,7 @@ export default SeriesModel.extend({
 
         treeOption.leaves = leaves;
 
-        var hideNodeCount = 8
+        var hideNodeCount = option.hideNodeCount
 
         var tree = Tree.createTree(root, this, treeOption, hideNodeCount);
 
@@ -163,6 +163,8 @@ export default SeriesModel.extend({
         symbolSize: 7,
 
         expandAndCollapse: true,
+
+        hideNodeCount: 8,
 
         initialTreeDepth: 2,
 
