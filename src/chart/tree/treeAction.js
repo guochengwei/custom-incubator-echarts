@@ -23,6 +23,7 @@
 import * as echarts from '../../echarts'
 import { updateCenterAndZoom } from '../../action/roamHelper'
 
+var roamAfterExpandAndCollapse = false
 var lock = false
 echarts.registerAction({
     type: 'treeToggleExpandAndCollapse',
@@ -35,13 +36,24 @@ echarts.registerAction({
         lock = !lock
     }
 })
-
+echarts.registerAction({
+    type: 'treeToggleRoamAfterExpandAndCollapse',
+    event: 'treeToggleRoamAfterExpandAndCollapse',
+    update: 'update'
+}, function (payload, ecModel, api) {
+    if (payload.roamAfterExpandAndCollapse !== undefined) {
+        roamAfterExpandAndCollapse = payload.roamAfterExpandAndCollapse
+    } else {
+        roamAfterExpandAndCollapse = !roamAfterExpandAndCollapse
+    }
+})
 echarts.registerAction({
     type: 'treeExpandAndCollapse',
     event: 'treeExpandAndCollapse',
     update: 'update'
 }, function (payload, ecModel, api) {
     ecModel.eachComponent({ mainType: 'series', subType: 'tree', query: payload }, function (seriesModel) {
+        payload.roamAfterExpandAndCollapse = roamAfterExpandAndCollapse
         var dataIndex = payload.dataIndex
         var dataName = payload.dataName
         var dataKey = payload.dataKey

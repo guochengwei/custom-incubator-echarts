@@ -48270,8 +48270,6 @@ SeriesModel.extend({
 
         animationDurationUpdate: 1000,
 
-        roamAfterExpandAndCollapse: false,
-
         zoomThreshold: 0.2
         // roamZoomRadio: 1
     }
@@ -48630,13 +48628,12 @@ extendChartView({
          */
         this._controller = new RoamController(api.getZr());
 
-        this._controllerHost = {target: this.group};
+        this._controllerHost = { target: this.group };
 
         this.group.add(this._mainGroup);
     },
 
     render: function (seriesModel, ecModel, api, payload) {
-
         var data = seriesModel.getData();
 
         var layoutInfo = seriesModel.layoutInfo;
@@ -48647,8 +48644,7 @@ extendChartView({
 
         if (layout === 'radial') {
             group.attr('position', [layoutInfo.x + layoutInfo.width / 2, layoutInfo.y + layoutInfo.height / 2]);
-        }
-        else {
+        } else {
             group.attr('position', [layoutInfo.x, layoutInfo.y]);
         }
         this._updateViewCoordSys(seriesModel);
@@ -48671,37 +48667,36 @@ extendChartView({
             this._fontSize = seriesModel.get('label.fontSize');
         }
         data.diff(oldData)
-        .add(function (newIdx) {
-            if (symbolNeedsDraw$1(data, newIdx)) {
-                // Create node and edge
-                updateNode(data, newIdx, null, group, seriesModel, seriesScope);
-            }
-        })
-        .update(function (newIdx, oldIdx) {
-            var symbolEl = oldData.getItemGraphicEl(oldIdx);
-            if (!symbolNeedsDraw$1(data, newIdx)) {
-                symbolEl && removeNode(oldData, oldIdx, symbolEl, group, seriesModel, seriesScope);
-                return;
-            }
-            // Update node and edge
-            updateNode(data, newIdx, symbolEl, group, seriesModel, seriesScope);
-        })
-        .remove(function (oldIdx) {
-            var symbolEl = oldData.getItemGraphicEl(oldIdx);
-            // When remove a collapsed node of subtree, since the collapsed
-            // node haven't been initialized with a symbol element,
-            // you can't found it's symbol element through index.
-            // so if we want to remove the symbol element we should insure
-            // sybolthat the symbol element is not null.
-            if (symbolEl) {
-                removeNode(oldData, oldIdx, symbolEl, group, seriesModel, seriesScope);
-            }
-        })
-        .execute();
+            .add(function (newIdx) {
+                if (symbolNeedsDraw$1(data, newIdx)) {
+                    // Create node and edge
+                    updateNode(data, newIdx, null, group, seriesModel, seriesScope);
+                }
+            })
+            .update(function (newIdx, oldIdx) {
+                var symbolEl = oldData.getItemGraphicEl(oldIdx);
+                if (!symbolNeedsDraw$1(data, newIdx)) {
+                    symbolEl && removeNode(oldData, oldIdx, symbolEl, group, seriesModel, seriesScope);
+                    return
+                }
+                // Update node and edge
+                updateNode(data, newIdx, symbolEl, group, seriesModel, seriesScope);
+            })
+            .remove(function (oldIdx) {
+                var symbolEl = oldData.getItemGraphicEl(oldIdx);
+                // When remove a collapsed node of subtree, since the collapsed
+                // node haven't been initialized with a symbol element,
+                // you can't found it's symbol element through index.
+                // so if we want to remove the symbol element we should insure
+                // sybolthat the symbol element is not null.
+                if (symbolEl) {
+                    removeNode(oldData, oldIdx, symbolEl, group, seriesModel, seriesScope);
+                }
+            })
+            .execute();
 
         this._nodeScaleRatio = seriesModel.get('nodeScaleRatio');
         this._updateNodeAndLinkScale(seriesModel);
-
 
         if (seriesScope.expandAndCollapse) {
             data.eachItemGraphicEl(function (el, dataIndex) {
@@ -48715,8 +48710,8 @@ extendChartView({
             });
         }
         this._data = data;
-        if (seriesModel.get('roamAfterExpandAndCollapse')
-            && payload
+        if (payload
+            && payload.roamAfterExpandAndCollapse
             && payload.type === 'treeExpandAndCollapse'
             && data.getItemGraphicEl(payload.dataIndex)) {
             var zoomThreshold = seriesModel.get('zoomThreshold');
@@ -48735,8 +48730,7 @@ extendChartView({
             var zoomTo = zoom * 1 / (ky / 15 * zoom);
             if (scaleLimit.min > zoomTo) {
                 zoomTo = scaleLimit.min;
-            }
-            else if (scaleLimit.max < zoomTo) {
+            } else if (scaleLimit.max < zoomTo) {
                 zoomTo = scaleLimit.max;
             }
 
@@ -48750,8 +48744,7 @@ extendChartView({
                 var realCount = Math.round((now - lastTime) / 16.666667);
                 if (zoomFlag && now - start < animationDurationUpdate) {
                     lastTime = now;
-                }
-                else {
+                } else {
                     !position && (position = data.getItemGraphicEl(payload.dataIndex).position);
                     var _center = seriesModel.get('center');
                     var _count = frames - realCount > 0 ? frames - realCount : 1;
@@ -48775,13 +48768,12 @@ extendChartView({
                             originX: _center[0],
                             originY: _center[1]
                         });
-                      this._updateNodeAndLinkScale(seriesModel);
+                        this._updateNodeAndLinkScale(seriesModel);
                     }
                 }
                 if (realCount < frames) {
                     requestAnimationFrame(moveTo);
-                }
-                else {
+                } else {
                     if (zoomFlag) {
                         setTimeout(function () {
                             var scaleFontSize = Math.ceil(this._fontSize * (1 + (_zoom - 1) / 10));
@@ -48830,14 +48822,13 @@ extendChartView({
         viewCoordSys.setCenter(center);
         viewCoordSys.setZoom(zoom);
 
-
         // Here we use viewCoordSys just for computing the 'position' and 'scale' of the group
         this.group.attr({
             position: viewCoordSys.position,
             scale: viewCoordSys.scale
         });
         if (!center) {
-            var res = updateCenterAndZoom(viewCoordSys, {center: center, zoom: zoom});
+            var res = updateCenterAndZoom(viewCoordSys, { center: center, zoom: zoom });
             seriesModel.setCenter(res.center);
             seriesModel.setZoom(res.zoom);
         }
@@ -48852,7 +48843,7 @@ extendChartView({
             var rect = group.getBoundingRect();
             rect.applyTransform(group.transform);
             return rect.contain(x, y)
-                   && !onIrrelevantElement(e, api, seriesModel);
+                   && !onIrrelevantElement(e, api, seriesModel)
         });
 
         controller.enable(seriesModel.get('roam'));
@@ -48860,34 +48851,34 @@ extendChartView({
         controllerHost.zoom = seriesModel.coordinateSystem.getZoom();
 
         controller
-        .off('pan')
-        .off('zoom')
-        .on('pan', function (e) {
-            api.dispatchAction({
-                seriesId: seriesModel.id,
-                type: 'treeRoam',
-                dx: e.dx,
-                dy: e.dy
-            });
-            updateViewOnPan(controllerHost, e.dx, e.dy);
-        }, this)
-        .on('zoom', function (e) {
-            var _zoom = seriesModel.get('zoom');
-            var scaleFontSize = Math.ceil(this._fontSize * (1 + (_zoom - 1) / 10));
-            if (scaleFontSize !== seriesModel.option.label.fontSize) {
-                seriesModel.option.label.fontSize = scaleFontSize;
-                this.render(seriesModel, ecModel, api);
-            }
-            api.dispatchAction({
-                seriesId: seriesModel.id,
-                type: 'treeRoam',
-                zoom: e.scale,
-                originX: e.originX,
-                originY: e.originY
-            });
-            updateViewOnZoom(controllerHost, e.scale, e.originX, e.originY);
-            this._updateNodeAndLinkScale(seriesModel);
-        }, this);
+            .off('pan')
+            .off('zoom')
+            .on('pan', function (e) {
+                api.dispatchAction({
+                    seriesId: seriesModel.id,
+                    type: 'treeRoam',
+                    dx: e.dx,
+                    dy: e.dy
+                });
+                updateViewOnPan(controllerHost, e.dx, e.dy);
+            }, this)
+            .on('zoom', function (e) {
+                var _zoom = seriesModel.get('zoom');
+                var scaleFontSize = Math.ceil(this._fontSize * (1 + (_zoom - 1) / 10));
+                if (scaleFontSize !== seriesModel.option.label.fontSize) {
+                    seriesModel.option.label.fontSize = scaleFontSize;
+                    this.render(seriesModel, ecModel, api);
+                }
+                api.dispatchAction({
+                    seriesId: seriesModel.id,
+                    type: 'treeRoam',
+                    zoom: e.scale,
+                    originX: e.originX,
+                    originY: e.originY
+                });
+                updateViewOnZoom(controllerHost, e.scale, e.originX, e.originY);
+                this._updateNodeAndLinkScale(seriesModel);
+            }, this);
     },
 
     _updateNodeAndLinkScale: function (seriesModel) {
@@ -48903,7 +48894,7 @@ extendChartView({
     _getNodeGlobalScale: function (seriesModel) {
         var coordSys = seriesModel.coordinateSystem;
         if (coordSys.type !== 'view') {
-            return 1;
+            return 1
         }
 
         var nodeScaleRatio = this._nodeScaleRatio;
@@ -48914,7 +48905,7 @@ extendChartView({
         var roamZoom = coordSys.getZoom();
         var nodeScale = (roamZoom - 1) * nodeScaleRatio + 1;
 
-        return nodeScale / groupZoom;
+        return nodeScale / groupZoom
     },
 
     dispose: function () {
@@ -48927,18 +48918,18 @@ extendChartView({
         this._data = null;
     }
 
-});
+})
 
-function symbolNeedsDraw$1(data, dataIndex) {
+function symbolNeedsDraw$1 (data, dataIndex) {
     var layout = data.getItemLayout(dataIndex);
     var node = data.tree.getNodeByDataIndex(dataIndex);
-  return layout
+    return layout
            && !isNaN(layout.x) && !isNaN(layout.y)
            && data.getItemVisual(dataIndex, 'symbol') !== 'none'
-           && !node.invisible;
+           && !node.invisible
 }
 
-function getTreeNodeStyle(node, itemModel, seriesScope) {
+function getTreeNodeStyle (node, itemModel, seriesScope) {
     seriesScope.itemModel = itemModel;
     seriesScope.itemStyle = itemModel.getModel('itemStyle').getItemStyle();
     seriesScope.hoverItemStyle = itemModel.getModel('emphasis.itemStyle').getItemStyle();
@@ -48960,14 +48951,13 @@ function getTreeNodeStyle(node, itemModel, seriesScope) {
     }
     if (node.isActive) {
         seriesScope.symbolInnerColor = seriesScope.hoverItemStyle.fill;
+    } else {
+        seriesScope.symbolInnerColor = '#FFFFFF';
     }
-    else {
-        seriesScope.symbolInnerColor = '#fff';
-    }
-    return seriesScope;
+    return seriesScope
 }
 
-function updateNode(data, dataIndex, symbolEl, group, seriesModel, seriesScope) {
+function updateNode (data, dataIndex, symbolEl, group, seriesModel, seriesScope) {
     var isInit = !symbolEl;
     var tree = data.tree;
     var node = tree.getNodeByDataIndex(dataIndex);
@@ -48979,25 +48969,23 @@ function updateNode(data, dataIndex, symbolEl, group, seriesModel, seriesScope) 
     var sourceSymbolEl = data.getItemGraphicEl(source.dataIndex);
     var sourceLayout = source.getLayout();
     var sourceOldLayout = sourceSymbolEl
-                          ? {
+        ? {
             x: sourceSymbolEl.position[0],
             y: sourceSymbolEl.position[1],
             rawX: sourceSymbolEl.__radialOldRawX,
             rawY: sourceSymbolEl.__radialOldRawY
         }
-                          : sourceLayout;
+        : sourceLayout;
     var targetLayout = node.getLayout();
     if (node.isActive) {
         data.setItemVisual(dataIndex, 'symbolSize', Math.max(symbolSize * 1.2, symbolSize + 5));
-    }
-    else {
+    } else {
         data.setItemVisual(dataIndex, 'symbolSize', symbolSize);
     }
     if (isInit) {
         symbolEl = new SymbolClz$1(data, dataIndex, seriesScope);
         symbolEl.attr('position', [sourceOldLayout.x, sourceOldLayout.y]);
-    }
-    else {
+    } else {
         symbolEl.updateData(data, dataIndex, seriesScope);
     }
 
@@ -49033,8 +49021,7 @@ function updateNode(data, dataIndex, symbolEl, group, seriesModel, seriesScope) 
             if (isLeft) {
                 rad = rad - Math.PI;
             }
-        }
-        else {
+        } else {
             rad = Math.atan2(targetLayout.y - rootLayout.y, targetLayout.x - rootLayout.x);
             if (rad < 0) {
                 rad = Math.PI * 2 + rad;
@@ -49044,8 +49031,7 @@ function updateNode(data, dataIndex, symbolEl, group, seriesModel, seriesScope) 
                 if (isLeft) {
                     rad = rad - Math.PI;
                 }
-            }
-            else {
+            } else {
                 isLeft = targetLayout.x > rootLayout.x;
                 if (!isLeft) {
                     rad = rad - Math.PI;
@@ -49065,7 +49051,7 @@ function updateNode(data, dataIndex, symbolEl, group, seriesModel, seriesScope) 
     var ancestors = node.getAncestors(true);
     var ancestorsEl = ancestors.map(function (item) {
         if (item !== virtualRoot && !item.isActive) {
-            return data.getItemGraphicEl(item.dataIndex);
+            return data.getItemGraphicEl(item.dataIndex)
         }
     });
     if (node.parentNode && node.parentNode !== virtualRoot) {
@@ -49075,13 +49061,13 @@ function updateNode(data, dataIndex, symbolEl, group, seriesModel, seriesScope) 
         if (!edge) {
             edge = symbolEl.__edge = new BezierCurve({
                 shape: getEdgeShape(seriesScope, sourceOldLayout, sourceOldLayout),
-                style: defaults({opacity: 0, strokeNoScale: true}, seriesScope.lineStyle)
+                style: defaults({ opacity: 0, strokeNoScale: true }, seriesScope.lineStyle)
             });
         }
 
         updateProps(edge, {
             shape: getEdgeShape(seriesScope, sourceLayout, targetLayout),
-            style: {opacity: 1}
+            style: { opacity: 1 }
         }, seriesModel);
         setHoverStyle(edge, seriesScope.hoverLineModel);
 
@@ -49089,17 +49075,17 @@ function updateNode(data, dataIndex, symbolEl, group, seriesModel, seriesScope) 
         symbolEl.off('mouseover').off('mouseout');
         group.add(edge);
         edge.on('mouseover', function () {
-            ancestorsEl.forEach(function (item) {
-                item && item.__edge && item.__edge.trigger('emphasis');
-                item && item.highlight();
+                ancestorsEl.forEach(function (item) {
+                    item && item.__edge && item.__edge.trigger('emphasis');
+                    item && item.highlight();
+                });
+            })
+            .on('mouseout', function () {
+                ancestorsEl.forEach(function (item) {
+                    item && item.__edge && item.__edge.trigger('normal');
+                    item && item.downplay();
+                });
             });
-        })
-        .on('mouseout', function () {
-            ancestorsEl.forEach(function (item) {
-                item && item.__edge && item.__edge.trigger('normal');
-                item && item.downplay();
-            });
-        });
 
         symbolEl.on('mouseover', function () {
             symbolEl.__edge.trigger('mouseover');
@@ -49110,7 +49096,7 @@ function updateNode(data, dataIndex, symbolEl, group, seriesModel, seriesScope) 
     }
 }
 
-function removeNode(data, dataIndex, symbolEl, group, seriesModel, seriesScope) {
+function removeNode (data, dataIndex, symbolEl, group, seriesModel, seriesScope) {
     var node = data.tree.getNodeByDataIndex(dataIndex);
     var virtualRoot = data.tree.root;
     var itemModel = node.getModel();
@@ -49129,7 +49115,7 @@ function removeNode(data, dataIndex, symbolEl, group, seriesModel, seriesScope) 
         data.setItemGraphicEl(dataIndex, null);
     });
 
-    symbolEl.fadeOut(null, {keepLabel: true});
+    symbolEl.fadeOut(null, { keepLabel: true });
     var edge = symbolEl.__edge;
     if (edge) {
         updateProps(edge, {
@@ -49143,7 +49129,7 @@ function removeNode(data, dataIndex, symbolEl, group, seriesModel, seriesScope) 
     }
 }
 
-function getEdgeShape(seriesScope, sourceLayout, targetLayout) {
+function getEdgeShape (seriesScope, sourceLayout, targetLayout) {
     var cpx1;
     var cpy1;
     var cpx2;
@@ -49174,9 +49160,8 @@ function getEdgeShape(seriesScope, sourceLayout, targetLayout) {
             cpy1: radialCoor2.y,
             cpx2: radialCoor3.x,
             cpy2: radialCoor3.y
-        };
-    }
-    else {
+        }
+    } else {
         x1 = sourceLayout.x;
         y1 = sourceLayout.y;
         x2 = targetLayout.x;
@@ -49205,7 +49190,7 @@ function getEdgeShape(seriesScope, sourceLayout, targetLayout) {
         cpy1: cpy1,
         cpx2: cpx2,
         cpy2: cpy2
-    };
+    }
 
 }
 
@@ -49231,6 +49216,7 @@ function getEdgeShape(seriesScope, sourceLayout, targetLayout) {
  * @file Register the actions of the tree
  * @author Deqing Li(annong035@gmail.com)
  */
+var roamAfterExpandAndCollapse = false;
 var lock = false;
 registerAction({
     type: 'treeToggleExpandAndCollapse',
@@ -49243,13 +49229,24 @@ registerAction({
         lock = !lock;
     }
 });
-
+registerAction({
+    type: 'treeToggleRoamAfterExpandAndCollapse',
+    event: 'treeToggleRoamAfterExpandAndCollapse',
+    update: 'update'
+}, function (payload, ecModel, api) {
+    if (payload.roamAfterExpandAndCollapse !== undefined) {
+        roamAfterExpandAndCollapse = payload.roamAfterExpandAndCollapse;
+    } else {
+        roamAfterExpandAndCollapse = !roamAfterExpandAndCollapse;
+    }
+});
 registerAction({
     type: 'treeExpandAndCollapse',
     event: 'treeExpandAndCollapse',
     update: 'update'
 }, function (payload, ecModel, api) {
     ecModel.eachComponent({ mainType: 'series', subType: 'tree', query: payload }, function (seriesModel) {
+        payload.roamAfterExpandAndCollapse = roamAfterExpandAndCollapse;
         var dataIndex = payload.dataIndex;
         var dataName = payload.dataName;
         var dataKey = payload.dataKey;
