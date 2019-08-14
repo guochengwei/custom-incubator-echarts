@@ -111,13 +111,11 @@ echarts.registerAction({
             } catch (e) { }
             return
         }
-
-        node.isExpand = !(node.isExpand && node.isActive)
-
-        if (payload.expand !== undefined) {
-            node.isExpand = payload.expand
-        }
         if (!lock) {
+            node.isExpand = !(node.isExpand && node.isActive)
+            if (payload.expand !== undefined) {
+                node.isExpand = payload.expand
+            }
             tree.root.eachNode(function (item) {
                 item.isActive = false
                 var el = data.getItemGraphicEl(item.dataIndex)
@@ -125,7 +123,7 @@ echarts.registerAction({
                 el && el.__edge && el.__edge.trigger('normal')
             })
         }
-
+        var isActive = node.isActive
         node.getAncestors(true).forEach(function (item) {
             if (!item.isActive) {
                 item.isActive = true
@@ -134,6 +132,12 @@ echarts.registerAction({
                 el && el.__edge && el.__edge.trigger('emphasis')
             }
         })
+        if (lock && isActive) {
+            node.isActive = false
+            var el = data.getItemGraphicEl(node.dataIndex)
+            el && el.downplay()
+            el && el.__edge && el.__edge.trigger('normal')
+        }
     })
 })
 echarts.registerAction({
